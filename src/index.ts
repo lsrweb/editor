@@ -1,36 +1,75 @@
-class MEditor extends HTMLElement {
-  // 添加一个静态标志，用于识别是否通过工厂方法创建
-  static isCreatingViaFactory = false;
+import { MEditorCore } from './editor/core';
+import { DOMHandler } from './editor/dom-handler';
+import { EventHandler } from './editor/event-handler';
+import { ContentProcessor } from './editor/content-processor';
+import { ComponentManager } from './editor/component-manager';
+import { Utils } from './editor/utils';
+
+
+import "./editor/block"
+import "./editor/coupon-block"
+
+
+import "./css/components.css"
+import "./css/style.css"
+
+/**
+ * 富文本编辑器组件
+ */
+class MEditor extends MEditorCore {
+  static components = new Map();
+  _initialized: boolean;
+  _editorContainer: null;
+  _clearButton: null;
+  _value: string;
+  _updating: boolean;
+  _isRestoring: boolean;
+  _readyCallbacks: never[];
 
   constructor() {
     super();
     
-    // 检查是否是通过new操作符直接实例化的，且不是通过工厂方法
-    if (new.target === MEditor && !MEditor.isCreatingViaFactory) {
-      return MEditor.createInstance();
-    }
+    // 混入各功能模块
+    Object.assign(
+      this,
+      DOMHandler.methods,
+      EventHandler.methods,
+      ContentProcessor.methods
+    );
+
+    // 初始化实例属性
+    this._initialized = false;
+    this._editorContainer = null;
+    this._clearButton = null;
+    this._value = '';
+    this._updating = false;
+    this._isRestoring = false;
+    this._readyCallbacks = [];
   }
   
-  // 静态工厂方法，用于处理通过new创建的情况
-  static createInstance() {
-    try {
-      // 设置标志，防止递归调用
-      MEditor.isCreatingViaFactory = true;
-      
-      // 创建自定义元素
-      const element = document.createElement('m-editor');
-      
-      return element;
-    } finally {
-      // 无论成功失败都重置标志
-      MEditor.isCreatingViaFactory = false;
-    }
+  /**
+   * 检测是否为Vue环境
+   */
+  static isVueEnvironment() {
+    return typeof window !== 'undefined' && typeof window.Vue !== 'undefined';
   }
 
-  // 这里添加其他MEditor的方法和属性...
+  /**
+   * 注册新组件
+   */
+  static registerComponent(type: any, config: any) {
+    ComponentManager.registerComponent(MEditor.components, type, config);
+  }
+
+  /**
+   * 获取已注册的组件
+   */
+  static getComponent(type: any) {
+    return MEditor.components.get(type);
+  }
 }
 
-// 确保自定义元素已注册
+// 注册组件
 if (!customElements.get('m-editor')) {
   customElements.define('m-editor', MEditor);
 }

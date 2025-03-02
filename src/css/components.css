@@ -1,0 +1,321 @@
+/**
+ * 公共组件样式
+ */
+
+/* 基础块样式 */
+m-block {
+  display: inline-block;
+  margin: 0 2px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+/* 块内容通用样式 */
+.block-content {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin: 4px;
+}
+
+/* 淘宝优惠券样式 */
+.taobao-style {
+  background-color: #fff2e8;
+  border: 1px solid #ffb380;
+}
+
+.block-icon {
+  margin-right: 4px;
+}
+
+.block-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* 淘宝礼金样式 */
+taobao-coupon {
+  display: inline-block;
+  width: max-content;
+}
+
+.taobao-style {
+  background-color: #fff1f0;
+  border: 1px solid #ff4d4f;
+  color: #ff4d4f;
+  border-radius: 4px;
+}
+
+taobao-coupon .block-content {
+  background-color: #fff2e8;
+  border: 1px solid #ffb380;
+  border-radius: 4px;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+taobao-coupon .block-icon {
+  margin-right: 4px;
+}
+
+taobao-coupon.is-restore .block-content {
+  background-color: rgba(255, 242, 232, 0.5);
+  border: 1px dashed #ffb380;
+}
+
+/* 京东礼金样式 */
+jd-coupon {
+  display: inline-block;
+  width: max-content;
+}
+
+.jd-style {
+  background-color: #f1f8ff;
+  border: 1px solid #a4c2f5;
+  color: #e1251b;
+  border-radius: 4px;
+}
+
+jd-coupon .block-content {
+  background-color: #f1f8ff;
+  border: 1px solid #a4c2f5;
+  border-radius: 4px;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+jd-coupon .block-icon {
+  margin-right: 4px;
+}
+
+jd-coupon.is-restore .block-content {
+  background-color: rgba(241, 248, 255, 0.5);
+  border: 1px dashed #a4c2f5;
+}
+
+/* 弹窗样式 */
+.coupon-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.coupon-dialog-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.coupon-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.coupon-dialog-body {
+  padding: 16px;
+}
+
+.coupon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.coupon-item {
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.coupon-item:hover {
+  background-color: #f5f5f5;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* 编辑器容器样式 */
+.m-editor-container {
+  position: relative;
+  width: 100%;
+  display: block;
+}
+
+/* 编辑器本身样式 */
+m-editor {
+  min-height: 100px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  display: block;
+}
+
+/* 清空按钮样式 */
+.m-editor-clear-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #666;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.m-editor-clear-btn:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+  color: #333;
+}
+
+/* 占位符样式 */
+m-editor.empty:before {
+  content: attr(placeholder);
+  color: #999;
+  position: absolute;
+  pointer-events: none;
+}
+
+/* 编辑器获取焦点时的样式 */
+m-editor:focus {
+  border-color: #4d90fe;
+  box-shadow: 0 0 5px rgba(77, 144, 254, 0.5);
+}
+
+/* 回显组件样式 - 确保正确显示 */
+.is-restore {
+  background-color: rgba(245, 245, 245, 0.8) !important;
+  border: 1px dashed #ccc !important;
+}
+
+/* 特别强调回显组件中的标签文本 */
+.is-restore .block-label {
+  font-family: monospace !important;
+  font-size: 14px !important;
+  color: #333 !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+}
+
+/* 确保回显组件的图标较小 */
+.is-restore .block-icon {
+  font-size: 14px;
+  margin-right: 4px;
+}
+
+/* 确保回显组件内容不被截断 */
+.is-restore .block-content {
+  max-width: none !important;
+  padding: 2px 8px !important;
+}
+
+/* 组件通用样式 */
+[id^="block-"] {
+  display: inline-block;
+  margin: 0 2px;
+  vertical-align: middle;
+}
+
+/* 确保回显组件中的文本正确显示 */
+.is-restore .block-label {
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+/* 可点击样式 */
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  opacity: 0.8;
+}
+
+/* 不可点击样式 */
+.non-clickable {
+  cursor: default;
+}
+
+/* 可点击和不可点击优惠券的样式区分 */
+
+.coupon-block {
+  display: inline-block;
+  padding: 2px 6px;
+  margin: 0 3px;
+  border-radius: 3px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+}
+
+.coupon-block.clickable {
+  cursor: pointer;
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.coupon-block.non-clickable {
+  cursor: default;
+  color: #666;
+  border-color: #ddd;
+}
+
+/* 淘宝优惠券特有样式 */
+.taobao-coupon.clickable {
+  background-color: #fff2e8;
+  border-color: #ff5000;
+  color: #ff5000;
+}
+
+.taobao-coupon.non-clickable {
+  background-color: #f9f9f9;
+  border-color: #ddd;
+  color: #999;
+}
+
+/* 京东优惠券特有样式 */
+.jd-coupon.clickable {
+  background-color: #f0f9ff;
+  border-color: #e1251b;
+  color: #e1251b;
+}
+
+.jd-coupon.non-clickable {
+  background-color: #f9f9f9;
+  border-color: #ddd;
+  color: #999;
+}

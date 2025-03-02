@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MEditor 双向绑定演示</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      margin-bottom: 20px;
+    }
+    .preview {
+      border: 1px dashed #999;
+      padding: 10px;
+      margin-top: 10px;
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+  <h1>MEditor 双向绑定演示</h1>
+  
+  <div class="container">
+    <h3>编辑器内容：</h3>
+    <m-editor id="editor"></m-editor>
+  </div>
+  
+  <div class="container">
+    <h3>数据预览：</h3>
+    <div class="preview" id="preview"></div>
+  </div>
+  
+  <div class="container">
+    <h3>外部控制：</h3>
+    <button id="addText">添加文本</button>
+    <button id="clearText">清空内容</button>
+  </div>
+
+  <script type="module">
+    // 直接导入模块
+    import MEditor from './src/index.js';
+    
+    // 等待DOM加载完成
+    document.addEventListener('DOMContentLoaded', () => {
+      // 创建数据对象
+      const data = {
+        content: '<p>这是初始内容，试着编辑我！</p>'
+      };
+      
+      // 获取元素
+      const editor = document.getElementById('editor');
+      const preview = document.getElementById('preview');
+      const addTextBtn = document.getElementById('addText');
+      const clearTextBtn = document.getElementById('clearText');
+      
+      // 确保editor是MEditor的实例
+      if (editor instanceof MEditor) {
+        // 绑定数据
+        editor.bindValue(data, 'content');
+        
+        // 初始化预览
+        updatePreview();
+        
+        // 监听变化
+        editor.subscribe(updatePreview);
+        
+        // 更新预览区域
+        function updatePreview() {
+          preview.innerHTML = data.content;
+        }
+      } else {
+        console.error('编辑器元素未找到或不是MEditor实例');
+      }
+      
+      // 添加按钮事件
+      addTextBtn.addEventListener('click', () => {
+        data.content += '<p>这是从外部添加的文本 - ' + new Date().toLocaleTimeString() + '</p>';
+      });
+      
+      // 清空按钮事件
+      clearTextBtn.addEventListener('click', () => {
+        data.content = '';
+      });
+    });
+  </script>
+</body>
+</html>

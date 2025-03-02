@@ -1,34 +1,37 @@
-/**
- * 淘宝礼金组件
- */
-class TaobaoCoupon extends MCouponBlock {
-  static tagName = "taobao-coupon";
-  static prefix = "TLJ-PLLJ";
-  static couponType = "taobao"; // 组件类型标识
-  static defaultIcon = "🎁"; // 默认图标
-  static styleClass = "taobao-style"; // CSS类
+import { MCouponBlock } from '../coupon-block';
 
-  static getPatterns(escapedPrefix) {
+/**
+ * 淘宝礼金组件 TypeScript版本
+ */
+export class TaobaoCoupon extends MCouponBlock {
+  static tagName: string = "taobao-coupon";
+  static prefix: string = "TLJ-PLLJ";
+  static couponType: string = "taobao"; // 组件类型标识
+  static defaultIcon: string = "🎁"; // 默认图标
+  static styleClass: string = "taobao-style"; // CSS类
+  static iconClass: string = "taobao-icon"; // 图标类名
+
+  static getPatterns(escapedPrefix: string) {
     return [
       // 花括号格式 {TLJ-PLLJ-1iTgI9}，修正连字符匹配，支持更多特殊字符
       {
         regex: new RegExp(`\\{${escapedPrefix}[-_]?([^}]+)\\}`, "g"),
-        extract: (match) => match[1],
+        extract: (match: RegExpExecArray) => match[1],
       },
       // 处理带连字符的格式 TLJ-PLLJ-1iTgI9，支持更多字符
       {
         regex: new RegExp(`${escapedPrefix}-([\\w\\d\\-\\.\\+\\=\\&\\!\\?\\%]+)`, "g"),
-        extract: (match) => match[1],
+        extract: (match: RegExpExecArray) => match[1],
       },
       // 处理带下划线的格式 TLJ-PLLJ_1iTgI9，支持更多字符
       {
         regex: new RegExp(`${escapedPrefix}_([\\w\\d\\-\\.\\+\\=\\&\\!\\?\\%]+)`, "g"),
-        extract: (match) => match[1],
+        extract: (match: RegExpExecArray) => match[1],
       },
       // 支持方括号格式 [TLJ-PLLJ-1iTgI9]，支持更多字符
       {
         regex: new RegExp(`\\[${escapedPrefix}[-_]?([\\w\\d\\-\\.\\+\\=\\&\\!\\?\\%]+)\\]`, "g"),
-        extract: (match) => match[1],
+        extract: (match: RegExpExecArray) => match[1],
       },
     ];
   }
@@ -55,22 +58,13 @@ class TaobaoCoupon extends MCouponBlock {
     const data = this.getData();
     const config = this._config || {};
 
-    // 调试输出，查看组件状态
-    console.log('淘宝礼金组件渲染:', {
-      isRestore: data.isRestore,
-      configIsRestore: config.isRestore,
-      hasClass: this.classList.contains('is-restore'),
-      originalFormat: data.originalFormat,
-      value: data.value
-    });
-
     // 检查是否是回显组件
     const isRestoreComponent = data.isRestore || config.isRestore || this.classList.contains('is-restore');
 
     // 如果是回显组件且有原始格式，直接使用原始格式渲染
     if (isRestoreComponent && data.originalFormat) {
-      const iconClass = this.constructor.iconClass || 'default-icon';
-      const defaultIcon = this.constructor.defaultIcon || '🎁';
+      const iconClass = (this.constructor as typeof TaobaoCoupon).iconClass || 'default-icon';
+      const defaultIcon = (this.constructor as typeof TaobaoCoupon).defaultIcon || '🎁';
 
       // 使用更简单的渲染结构，确保原始格式显示
       this.innerHTML = `
@@ -85,27 +79,9 @@ class TaobaoCoupon extends MCouponBlock {
     // 非回显情况，调用父类的渲染方法
     super._render();
   }
-
-  // 所有共用方法都继承自 MCouponBlock
 }
 
-// 注册组件
-customElements.define(TaobaoCoupon.tagName, TaobaoCoupon);
-
-// 修改注册到编辑器的方式
-// 使用 document ready 事件来确保 MEditor 已加载
-document.addEventListener('DOMContentLoaded', function() {
-  // 检查 MEditor 是否可用
-  if (typeof MEditor !== 'undefined') {
-    // 直接注册
-    TaobaoCoupon.register(MEditor);
-    console.log('淘宝礼金组件已注册到编辑器');
-  } else {
-    // 如果不可用，等待 editor-ready 事件
-    document.addEventListener('editor-ready', function(e) {
-      TaobaoCoupon.register(e.detail.editor);
-      console.log('淘宝礼金组件已注册到编辑器（延迟注册）');
-    });
-    console.warn('MEditor 尚未加载，淘宝礼金组件将在编辑器就绪后注册');
-  }
-});
+// 如果在浏览器环境中，自动注册为Web组件
+if (typeof window !== 'undefined' && !window.customElements.get(TaobaoCoupon.tagName)) {
+  window.customElements.define(TaobaoCoupon.tagName, TaobaoCoupon);
+}
