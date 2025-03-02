@@ -33,7 +33,7 @@ class JDCoupon extends MCouponBlock {
         super();
         this.classList.add('jd-coupon');
         this.setPrefix(JDCoupon.prefix);
-        
+
         // 设置默认配置
         this.setConfig({
             label_key: 'name',

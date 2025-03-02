@@ -58,7 +58,7 @@ class MEditor extends HTMLElement {
 
     // 防止事件递归的标志
     this._updating = false;
-    
+
     // 标记是否正在进行回显操作的标志
     this._isRestoring = false;
   }
@@ -477,7 +477,7 @@ class MEditor extends HTMLElement {
           console.log('提取的代码:', code);
 
           // 创建组件时，确保传递原始格式信息
-          const extraData = { 
+          const extraData = {
             originalFormat: fullMatch,
             ...(customData[fullMatch] || {}) // 合并与此组件匹配的自定义数据
           };
@@ -795,7 +795,7 @@ class MEditor extends HTMLElement {
    * @returns {HTMLElement} 创建的组件
    */
   _createCouponComponent(type, code, isRestore = false, extraData = {}) {
-    
+
     const componentConfig = MEditor.getComponent(type);
     if (!componentConfig || !componentConfig.constructor) {
       return document.createTextNode(`[${type}:${code}]`);
@@ -826,7 +826,7 @@ class MEditor extends HTMLElement {
       default_text: "替换组件",
       isRestore: isRestore  // 明确设置回显标志
     };
-    
+
     // 设置配置项
     component.setConfig(mergedConfig);
 
@@ -834,7 +834,7 @@ class MEditor extends HTMLElement {
     // 这里需要确保当有原始格式时，无论什么情况都优先使用它
     let displayText = '';
     const originalFormat = extraData.originalFormat || '';
-    
+
     if (isRestore && originalFormat) {
       displayText = originalFormat;
       console.log('使用原始格式创建组件:', originalFormat);
@@ -844,7 +844,7 @@ class MEditor extends HTMLElement {
     } else {
       displayText = mergedConfig.default_text || (type.includes('taobao') ? '淘宝礼金' : '京东礼金');
     }
-        
+
     // 明确添加CSS类以标记回显组件
     if (isRestore) {
       component.classList.add('is-restore');
@@ -860,13 +860,13 @@ class MEditor extends HTMLElement {
       originalFormat: originalFormat, // 保存原始格式
       ...extraData // 合并其他额外数据
     };
-    
+
     // 输出调试信息
     console.log('创建组件数据:', componentData);
-    
+
     // 设置组件数据
     component.setData(componentData);
-    
+
     // 明确调用setRestoreStatus方法设置回显状态
     if (isRestore && typeof component.setRestoreStatus === 'function') {
       component.setRestoreStatus(true);
@@ -905,14 +905,14 @@ class MEditor extends HTMLElement {
 
     // 检测是否有自定义组件的内容变化
     let componentChanged = false;
-    
+
     // 优化：只检查关键变化
     for (let i = 0; i < mutations.length; i++) {
       const mutation = mutations[i];
       // 检查是否有自定义组件变化
-      if (mutation.target.tagName && 
-          mutation.target.tagName.includes('-') &&
-          mutation.type !== 'attributes') {
+      if (mutation.target.tagName &&
+        mutation.target.tagName.includes('-') &&
+        mutation.type !== 'attributes') {
         componentChanged = true;
         break; // 找到一个就足够了，不需要继续
       }
@@ -941,7 +941,14 @@ class MEditor extends HTMLElement {
       components.forEach(component => {
         const originalComponent = this.querySelector(`#${component.id}`);
         if (originalComponent) {
-          const hasValue = originalComponent.hasValidValue && originalComponent.hasValidValue();
+          // 增加对回显组件的特殊处理 - 回显组件不应被视为空值
+          const isRestoreComponent = originalComponent.classList.contains('is-restore') ||
+            (originalComponent._data && originalComponent._data.isRestore) ||
+            (originalComponent._config && originalComponent._config.isRestore);
+
+          // 对回显组件特殊处理 - 始终视为有效值
+          const hasValue = isRestoreComponent ||
+            (originalComponent.hasValidValue && originalComponent.hasValidValue());
 
           if (filterEmpty && !hasValue) {
             component.remove();
@@ -994,6 +1001,26 @@ class MEditor extends HTMLElement {
       range.collapse(true);
       sel.removeAllRanges();
       sel.addRange(range);
+    } else {
+      // 修改部分：当编辑器已有内容时，将光标移到末尾
+      const range = document.createRange();
+      const sel = window.getSelection();
+
+      // 获取最后一个子节点
+      const lastChild = this.lastChild;
+
+      if (lastChild) {
+        if (lastChild.nodeType === Node.TEXT_NODE) {
+          // 如果是文本节点，将光标放在文本末尾
+          range.setStart(lastChild, lastChild.length);
+        } else {
+          // 如果是元素节点，将光标放在元素后面
+          range.setStartAfter(lastChild);
+        }
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
     }
 
     return this;
@@ -1094,7 +1121,7 @@ class MEditor extends HTMLElement {
       }
 
       // 设置初始数据 - 确保空值使用null处理，这样将触发<<NULL>>替换
-      
+
       if (block.setData) {
         const finalData = {
           id: blockId,
@@ -1195,13 +1222,13 @@ class MEditor extends HTMLElement {
         // 检查回显组件
         const restoreComponents = Array.from(this.querySelectorAll('[id^="block-"]')).filter(comp => {
           // 检查是否是回显组件
-          return comp._data && comp._data.isRestore || 
-                 comp._config && comp._config.isRestore ||
-                 comp.classList.contains('is-restore');
+          return comp._data && comp._data.isRestore ||
+            comp._config && comp._config.isRestore ||
+            comp.classList.contains('is-restore');
         });
-        
+
         const hasRestoreComponents = restoreComponents.length > 0;
-        
+
         // 获取新内容时考虑回显组件
         const newValue = this.getContent(false);
 
@@ -1212,10 +1239,10 @@ class MEditor extends HTMLElement {
         }
 
         // 特殊处理回显组件：如果新值包含NULL但有回显组件存在，可能是回显组件值被错误重置
-        if ((this._isRestoring || hasRestoreComponents) && 
-            (newValue.includes('<<NULL>>') || !newValue)) {
+        if ((this._isRestoring || hasRestoreComponents) &&
+          (newValue.includes('<<NULL>>') || !newValue)) {
           console.log('回显过程中检测到无效值，跳过更新');
-          
+
           // 修复回显组件的值，避免被重置为NULL
           if (hasRestoreComponents) {
             restoreComponents.forEach(comp => {
@@ -1250,9 +1277,9 @@ class MEditor extends HTMLElement {
         if (!this._isRestoring) {
           // 触发标准input事件，这对Vue的@input绑定至关重要
           // 创建新的input事件
-          const inputEvent = new Event('input', { 
+          const inputEvent = new Event('input', {
             bubbles: true, // 需要冒泡以支持Vue绑定
-            cancelable: true 
+            cancelable: true
           });
 
           // 设置target.value属性以兼容Vue的事件处理
@@ -1267,7 +1294,7 @@ class MEditor extends HTMLElement {
 
           // 记录更新值，方便调试
           console.log('更新值:', newValue);
-          
+
           // 调度输入事件
           this.dispatchEvent(inputEvent);
         } else {
@@ -1611,7 +1638,7 @@ class MEditor extends HTMLElement {
       // 编辑器已初始化，直接设置内容
       return this._setContentWithComponentsImpl(content, options, customData);
     }, 0);
-    
+
     return this;
   }
 
@@ -1623,10 +1650,10 @@ class MEditor extends HTMLElement {
     try {
       // 设置回显标志，防止触发过多的input事件
       this._isRestoring = true;
-      
+
       // 设置更新标志，防止在内容设置过程中触发更新
       this._updating = true;
-      
+
       // 先清空内容，确保不会有历史组件干扰
       this.innerHTML = '';
 
@@ -1638,7 +1665,7 @@ class MEditor extends HTMLElement {
 
       // 保存原始内容，用于恢复
       const originalContent = content;
-      
+
       // 直接处理文本内容，将组件标记转换为实际组件，并标记为回显组件
       // 同时传入自定义数据
       console.log('开始处理内容...');
@@ -1660,23 +1687,23 @@ class MEditor extends HTMLElement {
       // 如果处理后的内容有问题（包含<<NULL>>），使用原始内容代替
       if (newValue.includes('<<NULL>>')) {
         console.warn('检测到回显内容存在问题，保留原始内容');
-        this._value = originalContent; 
+        this._value = originalContent;
       } else {
         this._value = newValue;
       }
-      
+
       // 将值同步到attribute
       this.setAttribute('value', this._value);
-      
+
       // 重置更新标志
       this._updating = false;
-      
+
       // 手动触发一次change事件，但不触发input事件
       this.dispatchEvent(new CustomEvent('change', {
         bubbles: false,
         detail: { value: this._value }
       }));
-      
+
       // 使用setTimeout确保DOM更新已完成
       setTimeout(() => {
         // 清除回显标志
@@ -1702,18 +1729,18 @@ class MEditor extends HTMLElement {
    */
   setContentWithComponents(content) {
     if (!content) {
-        return this.setValue('');
+      return this.setValue('');
     }
 
     const self = this;
-    
+
     // 确保编辑器已初始化
     if (!this._initialized) {
-        return this.onReady(() => {
-            self._setContentWithComponentsSimple(content);
-        });
+      return this.onReady(() => {
+        self._setContentWithComponentsSimple(content);
+      });
     }
-    
+
     this._setContentWithComponentsSimple(content);
     return this;
   }
@@ -1724,102 +1751,102 @@ class MEditor extends HTMLElement {
    */
   _setContentWithComponentsSimple(content) {
     try {
-        // 设置防止递归更新的标志
-        this._isRestoring = true;
-        this._updating = true;
-        
-        // 清空当前内容
-        this.innerHTML = '';
-        
-        // 匹配所有花括号格式的组件代码 {PREFIX-CODE}
-        const componentPattern = /\{([A-Z0-9]+-[A-Z0-9]+-[^}]+)\}/g;
-        let match;
-        let lastIndex = 0;
-        const fragments = [];
-        
-        // 查找所有匹配
-        while ((match = componentPattern.exec(content)) !== null) {
-            const fullMatch = match[0]; // 完整匹配，如 {TLJ-PLLJ-1iTgI9}
-            const codeWithPrefix = match[1]; // 带前缀的代码，如 TLJ-PLLJ-1iTgI9
-            
-            // 添加匹配前的文本
-            if (match.index > lastIndex) {
-                fragments.push(document.createTextNode(
-                    content.substring(lastIndex, match.index)
-                ));
-            }
-            
-            // 尝试查找匹配的组件类型
-            let matchedComponent = false;
-            
-            // 检查所有注册的组件
-            for (const [type, config] of MEditor.components.entries()) {
-                if (!config.prefix) continue;
-                
-                // 检查是否匹配当前组件前缀
-                if (codeWithPrefix.startsWith(config.prefix)) {
-                    // 提取不带前缀的代码部分
-                    const code = codeWithPrefix.substring(config.prefix.length).replace(/^[-_]/, '');
-                    
-                    // 创建组件实例
-                    const component = new config.constructor();
-                    component.id = `block-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-                    
-                    // 设置为回显组件并显示原始格式
-                    if (typeof component.setAsRestoreComponent === 'function') {
-                        component.setAsRestoreComponent(fullMatch);
-                    }
-                    
-                    // 设置代码值(这样getContent可以正确获取值)
-                    component.setData({ value: code });
-                    
-                    // 将组件添加到结果中
-                    fragments.push(component);
-                    matchedComponent = true;
-                    break;
-                }
-            }
-            
-            // 如果没有匹配的组件，保留原始文本
-            if (!matchedComponent) {
-                fragments.push(document.createTextNode(fullMatch));
-            }
-            
-            lastIndex = match.index + fullMatch.length;
+      // 设置防止递归更新的标志
+      this._isRestoring = true;
+      this._updating = true;
+
+      // 清空当前内容
+      this.innerHTML = '';
+
+      // 匹配所有花括号格式的组件代码 {PREFIX-CODE}
+      const componentPattern = /\{([A-Z0-9]+-[A-Z0-9]+-[^}]+)\}/g;
+      let match;
+      let lastIndex = 0;
+      const fragments = [];
+
+      // 查找所有匹配
+      while ((match = componentPattern.exec(content)) !== null) {
+        const fullMatch = match[0]; // 完整匹配，如 {TLJ-PLLJ-1iTgI9}
+        const codeWithPrefix = match[1]; // 带前缀的代码，如 TLJ-PLLJ-1iTgI9
+
+        // 添加匹配前的文本
+        if (match.index > lastIndex) {
+          fragments.push(document.createTextNode(
+            content.substring(lastIndex, match.index)
+          ));
         }
-        
-        // 添加剩余文本
-        if (lastIndex < content.length) {
-            fragments.push(document.createTextNode(
-                content.substring(lastIndex)
-            ));
+
+        // 尝试查找匹配的组件类型
+        let matchedComponent = false;
+
+        // 检查所有注册的组件
+        for (const [type, config] of MEditor.components.entries()) {
+          if (!config.prefix) continue;
+
+          // 检查是否匹配当前组件前缀
+          if (codeWithPrefix.startsWith(config.prefix)) {
+            // 提取不带前缀的代码部分
+            const code = codeWithPrefix.substring(config.prefix.length).replace(/^[-_]/, '');
+
+            // 创建组件实例
+            const component = new config.constructor();
+            component.id = `block-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+
+            // 设置为回显组件并显示原始格式
+            if (typeof component.setAsRestoreComponent === 'function') {
+              component.setAsRestoreComponent(fullMatch);
+            }
+
+            // 设置代码值(这样getContent可以正确获取值)
+            component.setData({ value: code });
+
+            // 将组件添加到结果中
+            fragments.push(component);
+            matchedComponent = true;
+            break;
+          }
         }
-        
-        // 将所有片段添加到编辑器
-        fragments.forEach(fragment => this.appendChild(fragment));
-        
-        // 保存原始值并更新
-        this._value = content;
-        this.setAttribute('value', content);
-        
-        // 检查占位符
-        this._checkPlaceholder();
-        
-        // 触发change事件
-        this.dispatchEvent(new CustomEvent('change', {
-            bubbles: false,
-            detail: { value: content }
-        }));
+
+        // 如果没有匹配的组件，保留原始文本
+        if (!matchedComponent) {
+          fragments.push(document.createTextNode(fullMatch));
+        }
+
+        lastIndex = match.index + fullMatch.length;
+      }
+
+      // 添加剩余文本
+      if (lastIndex < content.length) {
+        fragments.push(document.createTextNode(
+          content.substring(lastIndex)
+        ));
+      }
+
+      // 将所有片段添加到编辑器
+      fragments.forEach(fragment => this.appendChild(fragment));
+
+      // 保存原始值并更新
+      this._value = content;
+      this.setAttribute('value', content);
+
+      // 检查占位符
+      this._checkPlaceholder();
+
+      // 触发change事件
+      this.dispatchEvent(new CustomEvent('change', {
+        bubbles: false,
+        detail: { value: content }
+      }));
     } catch (err) {
-        console.error('设置带组件内容时出错:', err);
-        // 出错时使用普通文本设置
-        this.setValue(content);
+      console.error('设置带组件内容时出错:', err);
+      // 出错时使用普通文本设置
+      this.setValue(content);
     } finally {
-        // 重置标志
-        setTimeout(() => {
-            this._isRestoring = false;
-            this._updating = false;
-        }, 100);
+      // 重置标志
+      setTimeout(() => {
+        this._isRestoring = false;
+        this._updating = false;
+      }, 100);
     }
   }
 }

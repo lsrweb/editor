@@ -12,16 +12,24 @@ class MCouponBlock extends MBlock {
         // 默认配置
         this._config.default_type = '优惠券'; // 默认类型名称
         this._config.clickable = true; // 默认可点击
+
+        // 明确初始化clickable属性
+        this._clickable = true;
     }
 
     connectedCallback() {
         super.connectedCallback();
-        
-        // 根据clickable参数决定是否添加点击事件监听器
+
+        // 检查clickable配置并应用到实例属性
+        if (this._config && this._config.hasOwnProperty('clickable')) {
+            this._clickable = !!this._config.clickable;
+        }
+
+        // 根据clickable状态决定是否添加点击事件监听器
         if (this._clickable) {
             this.addEventListener('click', this._handleClick.bind(this));
+            this.classList.add('clickable');
         } else {
-            // 当不可点击时，添加一个类以便于样式区分
             this.classList.add('non-clickable');
         }
     }
@@ -31,7 +39,10 @@ class MCouponBlock extends MBlock {
      */
     _handleClick(event) {
         // 如果组件被设置为不可点击，直接返回
-        if (!this._clickable) return;
+        if (!this._clickable) {
+            console.log('组件设置为不可点击，忽略点击事件');
+            return;
+        }
 
         // 阻止冒泡，以便编辑器不会失去焦点
         event.stopPropagation();
@@ -45,6 +56,7 @@ class MCouponBlock extends MBlock {
             detail: {
                 type: type,
                 data: this.getData(),
+                clickable: this._clickable, // 传递clickable状态
                 updateCoupon: (selectedValue) => this._updateCouponData(selectedValue)
             }
         });
@@ -64,13 +76,13 @@ class MCouponBlock extends MBlock {
         const label_key = config.label_key || 'name';
         const value_key = config.value_key || 'code';
         const default_text = config.default_text || this.constructor.couponType + '优惠券';
-        
+
         // 处理函数类型的selectedValue
         if (typeof selectedValue === 'function') {
             try {
                 // 执行函数获取实际值，传入当前组件和配置
                 const result = selectedValue(this, config);
-                
+
                 // 递归调用自身处理函数返回的结果
                 if (result) {
                     this._updateCouponData(result);
@@ -90,7 +102,7 @@ class MCouponBlock extends MBlock {
                 ...currentData,
                 value: codeValue,
                 displayText: this._processDisplayText(default_text, codeValue, { [value_key]: codeValue }),
-                selectedItem: { 
+                selectedItem: {
                     [value_key]: codeValue,
                     code: codeValue // 确保code值也被设置
                 }
@@ -98,7 +110,7 @@ class MCouponBlock extends MBlock {
         } else if (typeof selectedValue === 'object' && selectedValue !== null) {
             // 处理对象中可能存在的函数类型
             const processedValue = {};
-            
+
             // 处理可能是函数的值
             Object.keys(selectedValue).forEach(key => {
                 if (typeof selectedValue[key] === 'function') {
@@ -112,16 +124,16 @@ class MCouponBlock extends MBlock {
                     processedValue[key] = selectedValue[key];
                 }
             });
-            
+
             // 获取实际的值和显示文本
             const actualValue = processedValue[value_key] || processedValue.code || '';
             const displayText = processedValue[label_key] || processedValue.name || default_text;
-            
+
             // 确保selectedItem中的code值正确设置
             if (actualValue && !processedValue.code) {
                 processedValue.code = actualValue;
             }
-            
+
             this.setData({
                 ...currentData,
                 value: actualValue,
@@ -219,7 +231,7 @@ class MCouponBlock extends MBlock {
     _render() {
         const data = this.getData();
         const config = this._config || {};
-        
+
         // 调试输出
         console.log('MCouponBlock渲染:', {
             isRestore: data.isRestore,
@@ -228,16 +240,16 @@ class MCouponBlock extends MBlock {
             originalFormat: data.originalFormat,
             value: data.value
         });
-        
+
         // 获取组件的前缀
         const prefix = this.getPrefix();
-        
+
         // 使用回显特定的显示文本（如果是回显组件）
         let displayText;
-        
+
         // 更严格地检查回显状态，优先使用originalFormat
         const isRestoreComponent = data.isRestore || config.isRestore || this.classList.contains('is-restore');
-        
+
         if (isRestoreComponent && data.originalFormat) {
             // 使用原始格式作为显示文本
             displayText = data.originalFormat;
@@ -263,10 +275,10 @@ class MCouponBlock extends MBlock {
 
         // 获取组件的CSS类名
         const styleClass = this.constructor.styleClass || 'default-style';
-        
+
         // 根据clickable状态添加额外的类
         const clickableClass = this._clickable ? 'clickable' : 'non-clickable';
-        
+
         // 添加回显标记类 - 确保CSS类也被添加
         const restoreClass = isRestoreComponent ? 'is-restore' : '';
 
@@ -276,7 +288,7 @@ class MCouponBlock extends MBlock {
             <span class="block-label">${displayText}</span>
           </div>
         `;
-        
+
         // 强制应用回显CSS类 - 确保样式生效
         if (isRestoreComponent) {
             this.classList.add('is-restore');
@@ -288,7 +300,7 @@ class MCouponBlock extends MBlock {
      */
     getData() {
         const data = super.getData();
-        
+
         // 如果是回显组件，直接返回原值，避免被清理为NULL
         if (data.isRestore || this._config?.isRestore || this.classList.contains('is-restore')) {
             // 确保返回原始格式（如果有）
@@ -299,12 +311,12 @@ class MCouponBlock extends MBlock {
                 originalFormat: data.originalFormat || (this.getPrefix() && data.value ? `{${this.getPrefix()}-${data.value}}` : undefined)
             };
         }
-        
+
         // 确保selectedItem存在且包含code值
         if (data.selectedItem) {
             // 确保只返回 code 值，去掉可能包含的前缀
             let code = data.selectedItem.code;
-            
+
             // 如果code存在且为字符串，尝试清理前缀
             if (typeof code === 'string') {
                 // 从前缀中清除组件特定的前缀
@@ -314,14 +326,14 @@ class MCouponBlock extends MBlock {
                     const prefixPattern = new RegExp(`^${prefix}[^a-zA-Z0-9]*`, 'i');
                     code = code.replace(prefixPattern, '');
                 }
-                
+
                 // 确保返回的值是有效的
                 return {
                     ...data,
                     value: code || data.value || '<<NULL>>'
                 };
             }
-            
+
             // 如果code不是字符串，但value是有效值，则使用value
             if (data.value && data.value !== '<<NULL>>') {
                 return {
@@ -363,21 +375,21 @@ class MCouponBlock extends MBlock {
         // 获取当前配置和数据
         const config = this._config || {};
         const data = this.getData();
-        
+
         // 如果是回显组件，确保值被正确处理
         if (data.isRestore || config.isRestore) {
             const prefix = this.getPrefix();
             const value = data.value || '';
-            
+
             // 对于回显组件，使用更简单直接的格式返回
             if (prefix && value) {
                 return `{${prefix}-${value}}`;
             }
         }
-        
+
         // 优先使用data.value，确保它是一个有效值
         const value = (data.value && data.value !== '<<NULL>>') ? data.value : '';
-        
+
         // 如果没有有效值，检查是否应该返回空字符串而不是模板值
         if (!value) {
             // 如果配置了空值返回空字符串，则返回空字符串
@@ -406,10 +418,10 @@ class MCouponBlock extends MBlock {
                     config: {
                         ...this._config
                     },
-                    
+
                     // 添加匹配模式配置
                     matchPattern: config.matchPattern || null,
-                    
+
                     // 添加回显标识
                     isRestore: data.isRestore || config.isRestore || false
                 };
@@ -434,12 +446,47 @@ class MCouponBlock extends MBlock {
             ...data,
             value: value || '<<NULL>>' // 确保value存在，即使是空值标识
         };
-        
+
         // 确保实例化时设置了正确的模板
         const template = this._template || '{${prefix+value}}';
-        
+
         // 使用修正后的数据调用getValueWithTemplate
         return this.getValueWithTemplate(template);
+    }
+
+    /**
+     * 设置组件是否可点击
+     * @param {boolean} clickable 是否可点击
+     */
+    setClickable(clickable) {
+        this._clickable = !!clickable;
+
+        // 更新样式类
+        if (this._clickable) {
+            this.classList.add('clickable');
+            this.classList.remove('non-clickable');
+        } else {
+            this.classList.add('non-clickable');
+            this.classList.remove('clickable');
+        }
+
+        return this;
+    }
+
+    /**
+     * 设置组件配置
+     * @param {Object} config 配置对象
+     */
+    setConfig(config) {
+        this._config = { ...this._config, ...config };
+
+        // 特别处理clickable属性
+        if (config.hasOwnProperty('clickable')) {
+            this._clickable = !!config.clickable;
+            this.setClickable(this._clickable);
+        }
+
+        return this;
     }
 
     /**
@@ -468,7 +515,7 @@ class MCouponBlock extends MBlock {
     isRestoreComponent() {
         return !!(this._data?.isRestore || this._config?.isRestore);
     }
-    
+
     /**
      * 设置组件为回显组件
      * @param {boolean} isRestore 是否为回显组件
@@ -478,11 +525,11 @@ class MCouponBlock extends MBlock {
         // 确保数据对象存在
         if (!this._data) this._data = {};
         if (!this._config) this._config = {};
-        
+
         // 明确设置布尔值，避免隐式转换
         this._data.isRestore = Boolean(isRestore);
         this._config.isRestore = Boolean(isRestore);
-        
+
         // 添加/移除回显标记CSS类
         if (isRestore) {
             this.classList.add('is-restore');
@@ -490,12 +537,12 @@ class MCouponBlock extends MBlock {
         } else {
             this.classList.remove('is-restore');
         }
-        
+
         // 更新渲染以反映新状态
         if (this._initialized) {
             this._render();
         }
-        
+
         return this;
     }
 
@@ -508,31 +555,31 @@ class MCouponBlock extends MBlock {
         // 确保数据和配置对象存在
         if (!this._data) this._data = {};
         if (!this._config) this._config = {};
-        
+
         // 设置回显标志
         this._data.isRestore = true;
         this._config.isRestore = true;
-        
+
         // 保存原始格式
         this._data.originalFormat = originalFormat;
-        
+
         // 添加回显样式类
         this.classList.add('is-restore');
-        
+
         // 直接修改内部HTML以显示原始格式
         const iconClass = this.constructor.iconClass || 'default-icon';
         const defaultIcon = this.constructor.defaultIcon || '🏷️';
-        
+
         this.innerHTML = `
             <div class="block-content ${this.constructor.styleClass || 'default-style'} is-restore">
                 <span class="block-icon ${iconClass}">${defaultIcon}</span>
                 <span class="block-label">${originalFormat}</span>
             </div>
         `;
-        
+
         // 标记组件已初始化
         this._initialized = true;
-        
+
         return this;
     }
 }

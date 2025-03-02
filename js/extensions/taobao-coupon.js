@@ -32,7 +32,7 @@ class TaobaoCoupon extends MCouponBlock {
       },
     ];
   }
-  
+
   constructor() {
     super();
     this.classList.add("taobao-coupon");
@@ -63,7 +63,7 @@ class TaobaoCoupon extends MCouponBlock {
       originalFormat: data.originalFormat,
       value: data.value
     });
-    
+
     // 检查是否是回显组件
     const isRestoreComponent = data.isRestore || config.isRestore || this.classList.contains('is-restore');
 
@@ -81,7 +81,7 @@ class TaobaoCoupon extends MCouponBlock {
       `;
       return;
     }
-    
+
     // 非回显情况，调用父类的渲染方法
     super._render();
   }

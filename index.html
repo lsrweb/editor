@@ -7,6 +7,7 @@
     <title>富文本编辑器示例</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="css/components.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.5.13/vue.global.min.js"></script>
 </head>
 
 <body>
@@ -18,7 +19,8 @@
             <button id="insertJD">插入京东礼金</button>
         </div>
 
-        <m-editor id="editor" class="editor"></m-editor>
+        <m-editor id="editor" class="editor" ref="editor"></m-editor>
+
 
         <div class="actions">
             <button id="getContent">获取内容(过滤空值)</button>
@@ -47,8 +49,13 @@
             const editor = document.getElementById('editor');
             const output = document.getElementById('output');
 
-            // 示例 1: 基本用法
-            editor.setContentWithComponents("{TLJ-PLLJ-1iTgI9} 123123123123313{@昵称}{TLJ-PLLJ-2XXLv0} {TLJ-PLLJ-4qDspi} ");
+            // 修改基本用法示例，添加clickable:false预定义参数
+            editor.setContentWithComponents(
+                "{TLJ-PLLJ-1iTgI9} 123123123123313{@昵称}{TLJ-PLLJ-2XXLv0} {TLJ-PLLJ-4qDspi} ",
+                {
+                    clickable: false // 设置为不可点击
+                }
+            );
 
             // 插入淘宝礼金（使用自定义配置）
             document.getElementById('insertTaobao').addEventListener('click', () => {
@@ -240,6 +247,7 @@
             }
         });
     </script>
+
 </body>
 
 </html>

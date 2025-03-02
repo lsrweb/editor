@@ -270,3 +270,52 @@ m-editor:focus {
 .non-clickable {
   cursor: default;
 }
+
+/* 可点击和不可点击优惠券的样式区分 */
+
+.coupon-block {
+  display: inline-block;
+  padding: 2px 6px;
+  margin: 0 3px;
+  border-radius: 3px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+}
+
+.coupon-block.clickable {
+  cursor: pointer;
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.coupon-block.non-clickable {
+  cursor: default;
+  color: #666;
+  border-color: #ddd;
+}
+
+/* 淘宝优惠券特有样式 */
+.taobao-coupon.clickable {
+  background-color: #fff2e8;
+  border-color: #ff5000;
+  color: #ff5000;
+}
+
+.taobao-coupon.non-clickable {
+  background-color: #f9f9f9;
+  border-color: #ddd;
+  color: #999;
+}
+
+/* 京东优惠券特有样式 */
+.jd-coupon.clickable {
+  background-color: #f0f9ff;
+  border-color: #e1251b;
+  color: #e1251b;
+}
+
+.jd-coupon.non-clickable {
+  background-color: #f9f9f9;
+  border-color: #ddd;
+  color: #999;
+}
