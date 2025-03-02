@@ -220,23 +220,37 @@ class MCouponBlock extends MBlock {
         const data = this.getData();
         const config = this._config || {};
         
+        // 调试输出
+        console.log('MCouponBlock渲染:', {
+            isRestore: data.isRestore,
+            configIsRestore: config.isRestore,
+            hasClass: this.classList.contains('is-restore'),
+            originalFormat: data.originalFormat,
+            value: data.value
+        });
+        
         // 获取组件的前缀
         const prefix = this.getPrefix();
         
         // 使用回显特定的显示文本（如果是回显组件）
         let displayText;
         
-        // 检查是否是回显组件且有原始格式
-        if ((data.isRestore || config.isRestore || this.classList.contains('is-restore')) && data.originalFormat) {
+        // 更严格地检查回显状态，优先使用originalFormat
+        const isRestoreComponent = data.isRestore || config.isRestore || this.classList.contains('is-restore');
+        
+        if (isRestoreComponent && data.originalFormat) {
             // 使用原始格式作为显示文本
             displayText = data.originalFormat;
-        } else if (data.isRestore && data.value) {
+            console.log('使用原始格式显示:', data.originalFormat);
+        } else if (isRestoreComponent && data.value) {
             // 使用标准格式化显示
             const type = this.constructor.couponType || config.default_type || '优惠券';
             displayText = `${prefix ? `{${prefix}-${data.value}}` : `${type}: ${data.value}`}`;
+            console.log('使用标准格式显示:', displayText);
         } else {
             // 使用常规显示文本
             displayText = data.displayText || config.default_text || this.constructor.couponType + '优惠券';
+            console.log('使用常规显示文本:', displayText);
         }
 
         // 判断是使用图片还是图标
@@ -253,8 +267,8 @@ class MCouponBlock extends MBlock {
         // 根据clickable状态添加额外的类
         const clickableClass = this._clickable ? 'clickable' : 'non-clickable';
         
-        // 添加回显标记类
-        const restoreClass = data.isRestore || config.isRestore ? 'is-restore' : '';
+        // 添加回显标记类 - 确保CSS类也被添加
+        const restoreClass = isRestoreComponent ? 'is-restore' : '';
 
         this.innerHTML = `
           <div class="block-content ${styleClass} ${clickableClass} ${restoreClass}">
@@ -262,6 +276,11 @@ class MCouponBlock extends MBlock {
             <span class="block-label">${displayText}</span>
           </div>
         `;
+        
+        // 强制应用回显CSS类 - 确保样式生效
+        if (isRestoreComponent) {
+            this.classList.add('is-restore');
+        }
     }
 
     /**
@@ -467,6 +486,7 @@ class MCouponBlock extends MBlock {
         // 添加/移除回显标记CSS类
         if (isRestore) {
             this.classList.add('is-restore');
+            console.log('设置回显状态:', this.id, '原始格式:', this._data.originalFormat);
         } else {
             this.classList.remove('is-restore');
         }
@@ -478,6 +498,41 @@ class MCouponBlock extends MBlock {
         
         return this;
     }
-}
 
-// 不需要注册这个抽象基类
+    /**
+     * 设置为回显模式并展示原始格式
+     * @param {string} originalFormat 原始格式字符串
+     * @returns {MCouponBlock} 组件实例，支持链式调用
+     */
+    setAsRestoreComponent(originalFormat) {
+        // 确保数据和配置对象存在
+        if (!this._data) this._data = {};
+        if (!this._config) this._config = {};
+        
+        // 设置回显标志
+        this._data.isRestore = true;
+        this._config.isRestore = true;
+        
+        // 保存原始格式
+        this._data.originalFormat = originalFormat;
+        
+        // 添加回显样式类
+        this.classList.add('is-restore');
+        
+        // 直接修改内部HTML以显示原始格式
+        const iconClass = this.constructor.iconClass || 'default-icon';
+        const defaultIcon = this.constructor.defaultIcon || '🏷️';
+        
+        this.innerHTML = `
+            <div class="block-content ${this.constructor.styleClass || 'default-style'} is-restore">
+                <span class="block-icon ${iconClass}">${defaultIcon}</span>
+                <span class="block-label">${originalFormat}</span>
+            </div>
+        `;
+        
+        // 标记组件已初始化
+        this._initialized = true;
+        
+        return this;
+    }
+}

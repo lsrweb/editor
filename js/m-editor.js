@@ -416,7 +416,7 @@ class MEditor extends HTMLElement {
   _processPastedText(text, isRestore = false, customData = {}) {
     if (!text) return '';
 
-    console.log('原始内容:', text);
+    console.log('原始内容:', text, '是否回显:', isRestore);
 
     // 防止重复处理已经转换为HTML的内容
     if (text.indexOf('<taobao-coupon') >= 0 ||
@@ -453,7 +453,7 @@ class MEditor extends HTMLElement {
       let matchedComponent = false;
 
       // 调试输出
-      console.log('匹配到组件:', fullMatch, '代码:', codeWithPrefix);
+      console.log('匹配到组件:', fullMatch, '代码:', codeWithPrefix, '是否回显:', isRestore);
 
       MEditor.components.forEach((config, type) => {
         if (!config.prefix || matchedComponent) return;
@@ -476,12 +476,14 @@ class MEditor extends HTMLElement {
           const code = codeWithPrefix.substring(prefix.length).replace(/^[-_]/, '');
           console.log('提取的代码:', code);
 
-          // 创建组件并添加到结果 - 标记为回显组件
-          // 增加对原始格式的保存
-          const component = this._createCouponComponent(type, code, isRestore, { 
+          // 创建组件时，确保传递原始格式信息
+          const extraData = { 
             originalFormat: fullMatch,
             ...(customData[fullMatch] || {}) // 合并与此组件匹配的自定义数据
-          });
+          };
+
+          // 创建组件并添加到结果 - 标记为回显组件
+          const component = this._createCouponComponent(type, code, isRestore, extraData);
           fragments.push(component.outerHTML);
           matchedComponent = true;
           console.log('创建组件成功:', component.outerHTML);
@@ -816,29 +818,31 @@ class MEditor extends HTMLElement {
       component.setTemplate(componentConfig.defaultConfig.template);
     }
 
+    // 确保回显标志被正确设置到配置中
+    const mergedConfig = {
+      ...componentConfig.defaultConfig,
+      label_key: 'name',
+      value_key: 'code',
+      default_text: "替换组件",
+      isRestore: isRestore  // 明确设置回显标志
+    };
+    
     // 设置配置项
-    if (componentConfig.defaultConfig) {
-      const defaultConfig = {
-        label_key: 'name',
-        value_key: 'code',
-        default_text: "替换组件"
-      };
-      component.setConfig({
-        ...defaultConfig,
-        ...(componentConfig.defaultConfig || {}),
-        // 标记是否为回显组件
-        isRestore: isRestore
-      });
-    }
+    component.setConfig(mergedConfig);
 
     // 计算显示文本 - 首选使用原始格式（如果有）
-    let displayText;
-    if (isRestore && extraData.originalFormat) {
-      displayText = extraData.originalFormat;
+    // 这里需要确保当有原始格式时，无论什么情况都优先使用它
+    let displayText = '';
+    const originalFormat = extraData.originalFormat || '';
+    
+    if (isRestore && originalFormat) {
+      displayText = originalFormat;
+      console.log('使用原始格式创建组件:', originalFormat);
     } else if (isRestore) {
       displayText = (type.includes('taobao') ? '淘宝礼金: ' : '京东礼金: ') + code;
+      console.log('使用生成的格式创建组件:', displayText);
     } else {
-      displayText = component._config.default_text || (type.includes('taobao') ? '淘宝礼金' : '京东礼金');
+      displayText = mergedConfig.default_text || (type.includes('taobao') ? '淘宝礼金' : '京东礼金');
     }
         
     // 明确添加CSS类以标记回显组件
@@ -846,16 +850,22 @@ class MEditor extends HTMLElement {
       component.classList.add('is-restore');
     }
 
-    // 设置组件数据
-    component.setData({
+    // 设置组件数据 - 确保originalFormat被设置
+    const componentData = {
       id: blockId,
       value: code, // 保存原始值
       displayText: displayText,
-      selectedItem: { [component._config.value_key || 'code']: code, code: code }, // 确保code值存在
+      selectedItem: { [mergedConfig.value_key]: code, code: code }, // 确保code值存在
       isRestore: isRestore, // 在数据中也标记是否为回显数据
-      originalFormat: extraData.originalFormat || '', // 保存原始格式
+      originalFormat: originalFormat, // 保存原始格式
       ...extraData // 合并其他额外数据
-    });
+    };
+    
+    // 输出调试信息
+    console.log('创建组件数据:', componentData);
+    
+    // 设置组件数据
+    component.setData(componentData);
     
     // 明确调用setRestoreStatus方法设置回显状态
     if (isRestore && typeof component.setRestoreStatus === 'function') {
@@ -1682,6 +1692,134 @@ class MEditor extends HTMLElement {
       this._updating = false;
       // 出错时尝试直接设置为纯文本
       return this.setValue(content);
+    }
+  }
+
+  /**
+   * 简化版设置带组件的混合内容
+   * @param {string} content 包含组件标记的混合内容
+   * @returns {MEditor} 编辑器实例，支持链式调用
+   */
+  setContentWithComponents(content) {
+    if (!content) {
+        return this.setValue('');
+    }
+
+    const self = this;
+    
+    // 确保编辑器已初始化
+    if (!this._initialized) {
+        return this.onReady(() => {
+            self._setContentWithComponentsSimple(content);
+        });
+    }
+    
+    this._setContentWithComponentsSimple(content);
+    return this;
+  }
+
+  /**
+   * 简化版内容处理实现
+   * @private
+   */
+  _setContentWithComponentsSimple(content) {
+    try {
+        // 设置防止递归更新的标志
+        this._isRestoring = true;
+        this._updating = true;
+        
+        // 清空当前内容
+        this.innerHTML = '';
+        
+        // 匹配所有花括号格式的组件代码 {PREFIX-CODE}
+        const componentPattern = /\{([A-Z0-9]+-[A-Z0-9]+-[^}]+)\}/g;
+        let match;
+        let lastIndex = 0;
+        const fragments = [];
+        
+        // 查找所有匹配
+        while ((match = componentPattern.exec(content)) !== null) {
+            const fullMatch = match[0]; // 完整匹配，如 {TLJ-PLLJ-1iTgI9}
+            const codeWithPrefix = match[1]; // 带前缀的代码，如 TLJ-PLLJ-1iTgI9
+            
+            // 添加匹配前的文本
+            if (match.index > lastIndex) {
+                fragments.push(document.createTextNode(
+                    content.substring(lastIndex, match.index)
+                ));
+            }
+            
+            // 尝试查找匹配的组件类型
+            let matchedComponent = false;
+            
+            // 检查所有注册的组件
+            for (const [type, config] of MEditor.components.entries()) {
+                if (!config.prefix) continue;
+                
+                // 检查是否匹配当前组件前缀
+                if (codeWithPrefix.startsWith(config.prefix)) {
+                    // 提取不带前缀的代码部分
+                    const code = codeWithPrefix.substring(config.prefix.length).replace(/^[-_]/, '');
+                    
+                    // 创建组件实例
+                    const component = new config.constructor();
+                    component.id = `block-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+                    
+                    // 设置为回显组件并显示原始格式
+                    if (typeof component.setAsRestoreComponent === 'function') {
+                        component.setAsRestoreComponent(fullMatch);
+                    }
+                    
+                    // 设置代码值(这样getContent可以正确获取值)
+                    component.setData({ value: code });
+                    
+                    // 将组件添加到结果中
+                    fragments.push(component);
+                    matchedComponent = true;
+                    break;
+                }
+            }
+            
+            // 如果没有匹配的组件，保留原始文本
+            if (!matchedComponent) {
+                fragments.push(document.createTextNode(fullMatch));
+            }
+            
+            lastIndex = match.index + fullMatch.length;
+        }
+        
+        // 添加剩余文本
+        if (lastIndex < content.length) {
+            fragments.push(document.createTextNode(
+                content.substring(lastIndex)
+            ));
+        }
+        
+        // 将所有片段添加到编辑器
+        fragments.forEach(fragment => this.appendChild(fragment));
+        
+        // 保存原始值并更新
+        this._value = content;
+        this.setAttribute('value', content);
+        
+        // 检查占位符
+        this._checkPlaceholder();
+        
+        // 触发change事件
+        this.dispatchEvent(new CustomEvent('change', {
+            bubbles: false,
+            detail: { value: content }
+        }));
+    } catch (err) {
+        console.error('设置带组件内容时出错:', err);
+        // 出错时使用普通文本设置
+        this.setValue(content);
+    } finally {
+        // 重置标志
+        setTimeout(() => {
+            this._isRestoring = false;
+            this._updating = false;
+        }, 100);
     }
   }
 }

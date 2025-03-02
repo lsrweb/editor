@@ -14,9 +14,15 @@ m-block {
 .block-content {
   display: flex;
   align-items: center;
-  padding: 2px 8px;
+  padding: 4px 8px;
   border-radius: 4px;
   margin: 4px;
+}
+
+/* 淘宝优惠券样式 */
+.taobao-style {
+  background-color: #fff2e8;
+  border: 1px solid #ffb380;
 }
 
 .block-icon {
@@ -41,6 +47,24 @@ taobao-coupon {
   border-radius: 4px;
 }
 
+taobao-coupon .block-content {
+  background-color: #fff2e8;
+  border: 1px solid #ffb380;
+  border-radius: 4px;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+taobao-coupon .block-icon {
+  margin-right: 4px;
+}
+
+taobao-coupon.is-restore .block-content {
+  background-color: rgba(255, 242, 232, 0.5);
+  border: 1px dashed #ffb380;
+}
+
 /* 京东礼金样式 */
 jd-coupon {
   display: inline-block;
@@ -48,10 +72,28 @@ jd-coupon {
 }
 
 .jd-style {
-  background-color: #f1f1f1;
-  border: 1px solid #e1251b;
+  background-color: #f1f8ff;
+  border: 1px solid #a4c2f5;
   color: #e1251b;
   border-radius: 4px;
+}
+
+jd-coupon .block-content {
+  background-color: #f1f8ff;
+  border: 1px solid #a4c2f5;
+  border-radius: 4px;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+jd-coupon .block-icon {
+  margin-right: 4px;
+}
+
+jd-coupon.is-restore .block-content {
+  background-color: rgba(241, 248, 255, 0.5);
+  border: 1px dashed #a4c2f5;
 }
 
 /* 弹窗样式 */
@@ -173,4 +215,58 @@ m-editor.empty:before {
 m-editor:focus {
   border-color: #4d90fe;
   box-shadow: 0 0 5px rgba(77, 144, 254, 0.5);
+}
+
+/* 回显组件样式 - 确保正确显示 */
+.is-restore {
+  background-color: rgba(245, 245, 245, 0.8) !important;
+  border: 1px dashed #ccc !important;
+}
+
+/* 特别强调回显组件中的标签文本 */
+.is-restore .block-label {
+  font-family: monospace !important;
+  font-size: 14px !important;
+  color: #333 !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+}
+
+/* 确保回显组件的图标较小 */
+.is-restore .block-icon {
+  font-size: 14px;
+  margin-right: 4px;
+}
+
+/* 确保回显组件内容不被截断 */
+.is-restore .block-content {
+  max-width: none !important;
+  padding: 2px 8px !important;
+}
+
+/* 组件通用样式 */
+[id^="block-"] {
+  display: inline-block;
+  margin: 0 2px;
+  vertical-align: middle;
+}
+
+/* 确保回显组件中的文本正确显示 */
+.is-restore .block-label {
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+/* 可点击样式 */
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  opacity: 0.8;
+}
+
+/* 不可点击样式 */
+.non-clickable {
+  cursor: default;
 }

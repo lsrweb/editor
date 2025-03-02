@@ -47,6 +47,45 @@ class TaobaoCoupon extends MCouponBlock {
     });
   }
 
+  /**
+   * 重写渲染方法，确保回显时直接显示原始格式
+   */
+  _render() {
+    // 获取组件数据和配置
+    const data = this.getData();
+    const config = this._config || {};
+
+    // 调试输出，查看组件状态
+    console.log('淘宝礼金组件渲染:', {
+      isRestore: data.isRestore,
+      configIsRestore: config.isRestore,
+      hasClass: this.classList.contains('is-restore'),
+      originalFormat: data.originalFormat,
+      value: data.value
+    });
+    
+    // 检查是否是回显组件
+    const isRestoreComponent = data.isRestore || config.isRestore || this.classList.contains('is-restore');
+
+    // 如果是回显组件且有原始格式，直接使用原始格式渲染
+    if (isRestoreComponent && data.originalFormat) {
+      const iconClass = this.constructor.iconClass || 'default-icon';
+      const defaultIcon = this.constructor.defaultIcon || '🎁';
+
+      // 使用更简单的渲染结构，确保原始格式显示
+      this.innerHTML = `
+        <div class="block-content taobao-style is-restore">
+          <span class="block-icon ${iconClass}">${defaultIcon}</span>
+          <span class="block-label">${data.originalFormat}</span>
+        </div>
+      `;
+      return;
+    }
+    
+    // 非回显情况，调用父类的渲染方法
+    super._render();
+  }
+
   // 所有共用方法都继承自 MCouponBlock
 }
 
