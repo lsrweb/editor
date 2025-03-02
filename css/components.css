@@ -4,112 +4,173 @@
 
 /* 基础块样式 */
 m-block {
-    display: inline-block;
-    margin: 0 2px;
-    cursor: pointer;
-    vertical-align: middle;
+  display: inline-block;
+  margin: 0 2px;
+  cursor: pointer;
+  vertical-align: middle;
 }
 
 /* 块内容通用样式 */
 .block-content {
-    display: flex;
-    align-items: center;
-    padding: 2px 8px;
-    border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin: 4px;
 }
 
 .block-icon {
-    margin-right: 4px;
+  margin-right: 4px;
 }
 
 .block-label {
-    font-size: 14px;
-    font-weight: 500;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 /* 淘宝礼金样式 */
 taobao-coupon {
-    display: inline-block;
-    width: max-content;
+  display: inline-block;
+  width: max-content;
 }
 
 .taobao-style {
-    background-color: #fff1f0;
-    border: 1px solid #ff4d4f;
-    color: #ff4d4f;
-    border-radius: 4px;
+  background-color: #fff1f0;
+  border: 1px solid #ff4d4f;
+  color: #ff4d4f;
+  border-radius: 4px;
 }
 
 /* 京东礼金样式 */
 jd-coupon {
-    display: inline-block;
-    width: max-content;
+  display: inline-block;
+  width: max-content;
 }
 
 .jd-style {
-    background-color: #f1f1f1;
-    border: 1px solid #e1251b;
-    color: #e1251b;
-    border-radius: 4px;
+  background-color: #f1f1f1;
+  border: 1px solid #e1251b;
+  color: #e1251b;
+  border-radius: 4px;
 }
 
 /* 弹窗样式 */
 .coupon-dialog {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 
 .coupon-dialog-content {
-    background-color: white;
-    border-radius: 8px;
-    width: 80%;
-    max-width: 500px;
-    max-height: 80vh;
-    overflow-y: auto;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  background-color: white;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .coupon-dialog-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 16px;
-    border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid #eee;
 }
 
 .coupon-dialog-body {
-    padding: 16px;
+  padding: 16px;
 }
 
 .coupon-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .coupon-item {
-    padding: 12px;
-    border: 1px solid #eee;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s;
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .coupon-item:hover {
-    background-color: #f5f5f5;
+  background-color: #f5f5f5;
 }
 
 .close-btn {
-    background: none;
-    border: none;
-    font-size: 20px;
-    cursor: pointer;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* 编辑器容器样式 */
+.m-editor-container {
+  position: relative;
+  width: 100%;
+  display: block;
+}
+
+/* 编辑器本身样式 */
+m-editor {
+  min-height: 100px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  display: block;
+}
+
+/* 清空按钮样式 */
+.m-editor-clear-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #666;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.m-editor-clear-btn:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+  color: #333;
+}
+
+/* 占位符样式 */
+m-editor.empty:before {
+  content: attr(placeholder);
+  color: #999;
+  position: absolute;
+  pointer-events: none;
+}
+
+/* 编辑器获取焦点时的样式 */
+m-editor:focus {
+  border-color: #4d90fe;
+  box-shadow: 0 0 5px rgba(77, 144, 254, 0.5);
 }

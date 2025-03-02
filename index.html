@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,23 +8,24 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="css/components.css">
 </head>
+
 <body>
     <div class="container">
         <h1>富文本编辑器</h1>
-        
+
         <div class="button-group">
             <button id="insertTaobao">插入淘宝礼金</button>
             <button id="insertJD">插入京东礼金</button>
         </div>
-        
+
         <m-editor id="editor" class="editor"></m-editor>
-        
+
         <div class="actions">
             <button id="getContent">获取内容(过滤空值)</button>
             <button id="getContentWithEmpty">获取内容(保留空值)</button>
             <button id="getRawContent">获取原始内容</button>
         </div>
-        
+
         <div class="output">
             <h3>输出结果：</h3>
             <pre id="output"></pre>
@@ -33,20 +35,25 @@
     <!-- 加载基础组件 -->
     <script src="js/m-block.js"></script>
     <script src="js/m-editor.js"></script>
-    
+
+    <script src="js/m-coupon-block.js"></script>
+
     <!-- 加载扩展组件 -->
     <script src="js/extensions/taobao-coupon.js"></script>
     <script src="js/extensions/jd-coupon.js"></script>
-    
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const editor = document.getElementById('editor');
             const output = document.getElementById('output');
-            
+
+            // 示例 1: 基本用法
+            editor.setContentWithComponents("{TLJ-PLLJ-1iTgI9} 123123123123313{@昵称}{TLJ-PLLJ-2XXLv0} {TLJ-PLLJ-4qDspi} ");
+
             // 插入淘宝礼金（使用自定义配置）
             document.getElementById('insertTaobao').addEventListener('click', () => {
                 ensureEditorFocus();
-                editor.insertBlock('taobao-coupon', 
+                editor.insertBlock('taobao-coupon',
                     // 数据
                     {},
                     // 配置
@@ -55,13 +62,13 @@
                     }
                 );
             });
-            
+
             // 插入京东礼金（使用自定义配置）
             document.getElementById('insertJD').addEventListener('click', () => {
                 ensureEditorFocus();
                 editor.insertBlock('jd-coupon',
                     // 数据
-                    { 
+                    {
                         id: Date.now()
                     },
                     // 配置
@@ -74,13 +81,13 @@
             // 确保编辑器已获得焦点且有内容
             function ensureEditorFocus() {
                 editor.focus();
-                
+
                 // 如果编辑器是空的，创建一个初始段落
                 if (!editor.textContent.trim()) {
                     const p = document.createElement('p');
                     p.innerHTML = '&nbsp;';  // 使用空格确保段落有高度
                     editor.appendChild(p);
-                    
+
                     // 将光标移到段落开始处
                     const range = document.createRange();
                     const sel = window.getSelection();
@@ -90,7 +97,7 @@
                     sel.addRange(range);
                 }
             }
-            
+
             // 获取过滤后的内容（过滤空值）
             document.getElementById('getContent').addEventListener('click', () => {
                 try {
@@ -102,7 +109,7 @@
                     output.textContent = '获取内容出错: ' + err.message;
                 }
             });
-            
+
             // 获取内容（保留空值）
             document.getElementById('getContentWithEmpty').addEventListener('click', () => {
                 try {
@@ -114,17 +121,17 @@
                     output.textContent = '获取内容出错: ' + err.message;
                 }
             });
-            
+
             // 获取原始内容
             document.getElementById('getRawContent').addEventListener('click', () => {
                 output.textContent = editor.getRawContent();
             });
-            
+
             // 处理优惠券点击事件
             editor.addEventListener('coupon-click', (e) => {
                 const { type, data, updateCoupon } = e.detail;
                 console.log('优惠券点击:', type, data);
-                  
+
                 // 根据不同类型展示不同的弹窗
                 if (type === 'taobao') {
                     showCustomTaobaoDialog(updateCoupon);
@@ -132,12 +139,12 @@
                     showCustomJDDialog(updateCoupon);
                 }
             });
-            
+
             // 处理组件更新事件，便于调试
             editor.addEventListener('component-updated', (e) => {
                 console.log('组件已更新:', e.detail);
             });
-            
+
             // 自定义淘宝弹窗
             function showCustomTaobaoDialog(callback) {
                 // 创建弹窗，注意这里的 code 不要包含前缀
@@ -146,13 +153,13 @@
                     { code: 'B456', name: '满200减20元', desc: '服装类目专享' },
                     { code: 'C789', name: '满300减30元', desc: '电子类目专享' }
                 ]);
-                
+
                 // 设置选择回调
                 dialog.onSelect = (item) => {
                     callback(item);
                 };
             }
-            
+
             // 自定义京东弹窗
             function showCustomJDDialog(callback) {
                 // 创建弹窗，注意这里的 code 不要包含前缀
@@ -161,18 +168,18 @@
                     { code: 'B456', name: '满250减25元', desc: '美妆类目专享' },
                     { code: 'C789', name: '满500减50元', desc: '数码类目专享' }
                 ]);
-                
+
                 // 设置选择回调
                 dialog.onSelect = (item) => {
                     callback(item);
                 };
             }
-            
+
             // 创建通用弹窗
             function createDialog(title, items) {
                 const dialog = document.createElement('div');
                 dialog.className = 'coupon-dialog';
-                
+
                 let itemsHtml = '';
                 items.forEach(item => {
                     itemsHtml += `
@@ -182,7 +189,7 @@
                         </div>
                     `;
                 });
-                
+
                 dialog.innerHTML = `
                     <div class="coupon-dialog-content">
                         <div class="coupon-dialog-header">
@@ -196,42 +203,43 @@
                         </div>
                     </div>
                 `;
-                
+
                 document.body.appendChild(dialog);
-                
+
                 // 处理关闭和选择事件
                 const closeBtn = dialog.querySelector('.close-btn');
                 const couponItems = dialog.querySelectorAll('.coupon-item');
-                
+
                 closeBtn.addEventListener('click', () => {
                     document.body.removeChild(dialog);
                 });
-                
+
                 couponItems.forEach(item => {
                     item.addEventListener('click', () => {
                         const code = item.getAttribute('data-code');
                         const name = item.querySelector('strong').textContent;
                         const desc = item.querySelector('p').textContent;
-                        
+
                         const selectedItem = {
                             code,
                             name,
                             desc
                         };
-                        
+
                         console.log('选择优惠券:', selectedItem);
-                        
+
                         if (dialog.onSelect) {
                             dialog.onSelect(selectedItem);
                         }
-                        
+
                         document.body.removeChild(dialog);
                     });
                 });
-                
+
                 return dialog;
             }
         });
     </script>
 </body>
+
 </html>

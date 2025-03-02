@@ -11,18 +11,59 @@ class MBlock extends HTMLElement {
         });
     }
 
+    /**
+     * 检测是否为Vue环境
+     */
+    static isVueEnvironment() {
+        return typeof window !== 'undefined' && typeof window.Vue !== 'undefined';
+    }
+
     constructor() {
         super();
+
+        // 不在构造函数中处理DOM和属性
         this._data = {};
         this._prefix = ''; // 添加前缀属性
         this._template = '${prefix}_${value}'; // 默认模板
-        this._config = {}; // 存储组件配置
+        this._config = {
+            label_key: 'name',   // 默认标签键
+            value_key: 'code',   // 默认值键
+            icon_url: '',        // 图标URL，为空则使用默认图标
+            default_text: ''     // 默认文本
+        }; // 存储组件配置
+
+        // Vue环境检测
+        this._isVueEnvironment = MBlock.isVueEnvironment();
+
+        // 延迟初始化标志
+        this._initialized = false;
+
+        // 添加clickable属性，默认为可点击
+        this._clickable = true;
     }
 
     connectedCallback() {
-        // 默认不允许编辑
-        this.contentEditable = false;
-        this._render();
+        // 在DOM连接时设置属性，而非构造函数中
+        // 设置不可编辑
+        this.setAttribute('contenteditable', 'false');
+
+        // Vue环境适配
+        if (this._isVueEnvironment) {
+            // 标记组件不应被Vue处理
+            this.setAttribute('data-vue-skip', 'true');
+
+            // 延迟初始化确保DOM准备好
+            setTimeout(() => {
+                if (!this._initialized) {
+                    this._initialized = true;
+                    this._render();
+                }
+            }, 0);
+        } else {
+            // 非Vue环境直接初始化
+            this._initialized = true;
+            this._render();
+        }
     }
 
     disconnectedCallback() {
@@ -67,6 +108,12 @@ class MBlock extends HTMLElement {
      */
     setConfig(config) {
         this._config = { ...this._config, ...config };
+        
+        // 特别处理clickable属性
+        if (config.hasOwnProperty('clickable')) {
+            this._clickable = !!config.clickable;
+        }
+        
         return this;
     }
 
@@ -93,11 +140,11 @@ class MBlock extends HTMLElement {
     getValueWithTemplate(template) {
         const data = this.getData();
         const prefix = this.getPrefix();
-        
+
         // 支持的变量列表
         const variables = {
             prefix,
-            value: data.value || '<<NULL>>', // 修改默认空值标识
+            value: data.value || '<<NULL>>', // 空值标识
             id: data.id || '',
             // 添加组合变量
             'prefix+value': `${prefix}${data.value || '<<NULL>>'}`
@@ -127,9 +174,48 @@ class MBlock extends HTMLElement {
      * 子类需要重写此方法
      */
     _render() {
-        // 默认实现
-        const data = this.getData();
-        this.textContent = data.value || '未设置内容';
+        try {
+            if (!this._initialized) return; // 确保已初始化
+
+            // 默认实现
+            const data = this.getData();
+
+            // 使用自定义方式渲染而非直接赋值
+            this._safeRender(() => {
+                // 使用textContent而不是innerHTML来避免潜在的Vue兼容性问题
+                this.textContent = data.value || '未设置内容';
+            });
+        } catch (err) {
+            console.error('渲染组件时出错:', err);
+            this.textContent = '渲染错误';
+        }
+    }
+
+    /**
+     * 安全渲染方法
+     * 包装渲染操作，确保与Vue的兼容性
+     */
+    _safeRender(renderFn) {
+        if (this._isVueEnvironment) {
+            // 在Vue环境中，暂时移除数据响应式监听
+            const vueInstance = this.__vue__;
+            if (vueInstance && vueInstance.$parent) {
+                // 尝试临时停止Vue的监听
+                try {
+                    renderFn();
+                } catch (e) {
+                    console.error('Vue环境渲染错误:', e);
+                    // 降级处理
+                    setTimeout(renderFn, 0);
+                }
+            } else {
+                // 没有直接关联的Vue实例，使用延迟处理
+                setTimeout(renderFn, 0);
+            }
+        } else {
+            // 非Vue环境，直接执行渲染
+            renderFn();
+        }
     }
 
     /**
@@ -140,6 +226,44 @@ class MBlock extends HTMLElement {
         const data = this.getData();
         return !!data.value;
     }
+
+    /**
+     * 设置组件是否可点击
+     * @param {boolean} clickable 是否可点击
+     */
+    setClickable(clickable) {
+        this._clickable = !!clickable;
+        return this;
+    }
+
+    /**
+     * 获取组件是否可点击
+     * @returns {boolean} 是否可点击
+     */
+    isClickable() {
+        return this._clickable;
+    }
+
+    /**
+     * 判断是否为emoji或图片,根据码点判断
+     * 方法废弃,网上找到的方法不对
+     */
+    // isEmojiOrImage(iconUrl) {
+    //     if (!iconUrl) {
+    //         return false;
+    //     }
+
+    //     // 判断是否为emoji
+    //     if (iconUrl.length === 1) {
+    //         const code = iconUrl.charCodeAt(0);
+    //         return (code >= 0x1f600 && code <= 0x1f64f) ||
+    //             (code >= 0x1f300 && code <= 0x1f5ff) ||
+    //             (code >= 0x1f680 && code <= 0x1f6ff) ||
+    //             (code >= 0x1f900 && code <= 0x1f9ff);
+    //     }
+
+    //     return true;
+    // }
 }
 
 // 注册组件
