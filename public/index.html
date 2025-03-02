@@ -9,8 +9,17 @@
     <div id="editor-container"></div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const editor = new MEditor();
-            editor.init();
+            // 方式1：使用document.createElement
+            // const editor1 = document.createElement('m-editor');
+            // document.getElementById('editor-container').appendChild(editor1);
+            
+            // 方式2：使用new构造函数（添加这种方式的支持）
+            // 确保页面已加载MEditor库
+            setTimeout(() => {
+                const editor2 = new MEditor();
+                document.getElementById('editor-container').appendChild(editor2);
+                
+            }, 100);
         });
     </script>
 </body>
