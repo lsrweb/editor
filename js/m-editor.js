@@ -1611,123 +1611,11 @@ class MEditor extends HTMLElement {
   }
 
   /**
-   * 设置带有组件的混合内容
-   * @param {string} content 包含组件标记的混合内容
-   * @param {Object} options 解析配置选项
-   * @param {Object} customData 自定义数据对象，键是匹配的格式，值是要合并的数据
-   * @returns {MEditor} 编辑器实例，支持链式调用
-   */
-  setContentWithComponents(content, options = {}, customData = {}) {
-    console.log('设置带组件内容:', content);
-
-    if (!content) {
-      return this.setValue('');
-    }
-
-    setTimeout(() => {
-      // 确保编辑器已加载完成后再设置内容
-      if (!this._initialized) {
-        console.log('编辑器尚未初始化完成，等待初始化...');
-
-        return this.onReady(() => {
-          console.log('编辑器初始化完成，开始设置内容');
-          this._setContentWithComponentsImpl(content, options, customData);
-        });
-      }
-
-      // 编辑器已初始化，直接设置内容
-      return this._setContentWithComponentsImpl(content, options, customData);
-    }, 0);
-
-    return this;
-  }
-
-  /**
-   * 设置带有组件的混合内容的实际实现
-   * @private
-   */
-  _setContentWithComponentsImpl(content, options = {}, customData = {}) {
-    try {
-      // 设置回显标志，防止触发过多的input事件
-      this._isRestoring = true;
-
-      // 设置更新标志，防止在内容设置过程中触发更新
-      this._updating = true;
-
-      // 先清空内容，确保不会有历史组件干扰
-      this.innerHTML = '';
-
-      // 先重置之前处理过的内容，防止重复解析
-      this._resetProcessedContent();
-
-      // 标记这是一次回显操作
-      const isRestore = true;
-
-      // 保存原始内容，用于恢复
-      const originalContent = content;
-
-      // 直接处理文本内容，将组件标记转换为实际组件，并标记为回显组件
-      // 同时传入自定义数据
-      console.log('开始处理内容...');
-      const processedText = this._processPastedText(content, isRestore, customData);
-      console.log('处理后的内容:', processedText);
-
-      // 设置处理后的内容
-      this.innerHTML = processedText;
-
-      // 检查占位符
-      this._checkPlaceholder();
-
-      // 检查是否所有组件都正确创建
-      const componentCount = this.querySelectorAll('[id^="block-"]').length;
-      console.log(`已创建 ${componentCount} 个组件`);
-
-      // 立即更新值，避免多次事件触发
-      const newValue = this.getContent(false);
-      // 如果处理后的内容有问题（包含<<NULL>>），使用原始内容代替
-      if (newValue.includes('<<NULL>>')) {
-        console.warn('检测到回显内容存在问题，保留原始内容');
-        this._value = originalContent;
-      } else {
-        this._value = newValue;
-      }
-
-      // 将值同步到attribute
-      this.setAttribute('value', this._value);
-
-      // 重置更新标志
-      this._updating = false;
-
-      // 手动触发一次change事件，但不触发input事件
-      this.dispatchEvent(new CustomEvent('change', {
-        bubbles: false,
-        detail: { value: this._value }
-      }));
-
-      // 使用setTimeout确保DOM更新已完成
-      setTimeout(() => {
-        // 清除回显标志
-        this._isRestoring = false;
-        console.log('回显完成');
-      }, 200);
-
-      return this;
-    } catch (err) {
-      console.error('设置带组件内容时出错:', err, err.stack);
-      // 重置标志
-      this._isRestoring = false;
-      this._updating = false;
-      // 出错时尝试直接设置为纯文本
-      return this.setValue(content);
-    }
-  }
-
-  /**
    * 简化版设置带组件的混合内容
    * @param {string} content 包含组件标记的混合内容
    * @returns {MEditor} 编辑器实例，支持链式调用
    */
-  setContentWithComponents(content) {
+  setContentWithComponents(content, options = {}) {
     if (!content) {
       return this.setValue('');
     }
@@ -1737,105 +1625,127 @@ class MEditor extends HTMLElement {
     // 确保编辑器已初始化
     if (!this._initialized) {
       return this.onReady(() => {
-        self._setContentWithComponentsSimple(content);
+        self._setContentWithComponentsSimple(content, options);
       });
     }
 
-    this._setContentWithComponentsSimple(content);
+    this._setContentWithComponentsSimple(content, options);
     return this;
   }
 
   /**
-   * 简化版内容处理实现
+   * 内容处理实现
    * @private
    */
-  _setContentWithComponentsSimple(content) {
+  _setContentWithComponentsSimple(content, predefinedParams = {}) {
     try {
       // 设置防止递归更新的标志
       this._isRestoring = true;
       this._updating = true;
-
+  
       // 清空当前内容
       this.innerHTML = '';
-
+  
       // 匹配所有花括号格式的组件代码 {PREFIX-CODE}
       const componentPattern = /\{([A-Z0-9]+-[A-Z0-9]+-[^}]+)\}/g;
       let match;
       let lastIndex = 0;
       const fragments = [];
-
+  
       // 查找所有匹配
       while ((match = componentPattern.exec(content)) !== null) {
         const fullMatch = match[0]; // 完整匹配，如 {TLJ-PLLJ-1iTgI9}
         const codeWithPrefix = match[1]; // 带前缀的代码，如 TLJ-PLLJ-1iTgI9
-
+  
         // 添加匹配前的文本
         if (match.index > lastIndex) {
           fragments.push(document.createTextNode(
             content.substring(lastIndex, match.index)
           ));
         }
-
+  
         // 尝试查找匹配的组件类型
         let matchedComponent = false;
-
+  
         // 检查所有注册的组件
         for (const [type, config] of MEditor.components.entries()) {
           if (!config.prefix) continue;
-
+  
           // 检查是否匹配当前组件前缀
           if (codeWithPrefix.startsWith(config.prefix)) {
             // 提取不带前缀的代码部分
             const code = codeWithPrefix.substring(config.prefix.length).replace(/^[-_]/, '');
-
+  
             // 创建组件实例
             const component = new config.constructor();
             component.id = `block-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-
+  
+            // 重要：先应用预定义参数到组件配置
+            const componentConfig = {
+              ...config.defaultConfig,
+              ...predefinedParams, // 合并预定义参数
+              isRestore: true      // 回显组件标记
+            };
+            component.setConfig(componentConfig);
+  
+            // 设置前缀
+            if (config.prefix) {
+              component.setPrefix(config.prefix);
+            }
+  
+            // 特别处理clickable参数
+            if (predefinedParams.hasOwnProperty('clickable') && 
+                typeof component.setClickable === 'function') {
+              component.setClickable(!!predefinedParams.clickable);
+            }
+  
             // 设置为回显组件并显示原始格式
             if (typeof component.setAsRestoreComponent === 'function') {
               component.setAsRestoreComponent(fullMatch);
             }
-
+  
             // 设置代码值(这样getContent可以正确获取值)
             component.setData({ value: code });
-
+  
             // 将组件添加到结果中
             fragments.push(component);
             matchedComponent = true;
             break;
           }
         }
-
+  
         // 如果没有匹配的组件，保留原始文本
         if (!matchedComponent) {
           fragments.push(document.createTextNode(fullMatch));
         }
-
+  
         lastIndex = match.index + fullMatch.length;
       }
-
+  
       // 添加剩余文本
       if (lastIndex < content.length) {
         fragments.push(document.createTextNode(
           content.substring(lastIndex)
         ));
       }
-
+  
       // 将所有片段添加到编辑器
       fragments.forEach(fragment => this.appendChild(fragment));
-
+  
       // 保存原始值并更新
       this._value = content;
       this.setAttribute('value', content);
-
+  
       // 检查占位符
       this._checkPlaceholder();
-
+  
       // 触发change事件
       this.dispatchEvent(new CustomEvent('change', {
         bubbles: false,
-        detail: { value: content }
+        detail: { 
+          value: content,
+          predefinedParams: predefinedParams 
+        }
       }));
     } catch (err) {
       console.error('设置带组件内容时出错:', err);
