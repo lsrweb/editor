@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>组件富文本编辑器</title>
+    <style>
+        #editor {
+            border: 1px solid #ccc;
+            min-height: 200px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        .component {
+            background-color: #e0f0ff;
+            border: 1px solid #a0c0ff;
+            padding: 2px 5px;
+            border-radius: 3px;
+            margin: 0 2px;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <button onclick="insertComponent('tlj')">插入淘礼金</button>
+        <button onclick="insertComponent('jdlj')">插入京东礼金</button>
+        <button onclick="insertComponent('nickname')">插入昵称</button>
+        <button onclick="insertComponent('emoji')">插入表情</button>
+    </div>
+    <div id="editor" contenteditable="true"></div>
+    <button onclick="saveContent()">保存内容</button>
+    <button onclick="loadContent()">回显测试</button>
+    <button onclick="loadTestExample()">加载测试示例</button>
+
+    <script>
+        const componentDefinitions = [
+            {
+                prefix: '{TLJ-PLLJ-',
+                suffix: '}',
+                type: 'tlj',
+                className: 'component tlj-component',
+                needsId: true,
+                formatTitle: (id) => `淘礼金组件: ${id}`,
+            },
+            {
+                prefix: '{JDLJ-PLLJ-',
+                suffix: '}',
+                type: 'jdlj',
+                className: 'component jdlj-component',
+                needsId: true,
+                formatTitle: (id) => `京东礼金组件: ${id}`,
+            },
+            {
+                prefix: '{@昵称',
+                suffix: '}',
+                type: 'nickname',
+                className: 'component nickname-component',
+                needsId: false,
+                formatTitle: () => '昵称占位符',
+            },
+            {
+                prefix: '[',
+                suffix: ']',
+                type: 'emoji',
+                className: 'component emoji-component',
+                needsId: true,
+                formatTitle: (id) => `表情: ${id}`,
+                noWrap: true
+            }
+        ];
+
+        // 插入组件处理
+     // 修改后的插入组件处理函数
+function insertComponent(type) {
+    const editor = document.getElementById('editor');
+    const componentDef = componentDefinitions.find(c => c.type === type);
+    if (!componentDef) return;
+
+    // 确保编辑器获得焦点
+    if (!editor.contains(document.activeElement)) {
+        editor.focus();
+    }
+
+    // 如果选区不在编辑器内，则将光标移动到最后
+    if (!isSelectionInside(editor)) {
+        moveCursorToEnd(editor);
+    }
+
+    // 后续插入逻辑保持不变...
+    let id = '';
+    if (componentDef.needsId) {
+        id = prompt(`请输入${componentDef.type}的ID:`);
+        if (id === null) return;
+    }
+
+    const component = createComponentElement(componentDef, id);
+    insertAtCursor(component);
+}
+
+// 创建组件元素
+function createComponentElement(componentDef, id) {
+    const span = document.createElement('span');
+    span.className = componentDef.className;
+    span.contentEditable = false;
+    
+    // 设置显示文本
+    span.textContent = componentDef.formatTitle(id);
+    
+    // 存储原始数据用于序列化
+    span.dataset.type = componentDef.type;
+    if (componentDef.needsId && id) {
+        span.dataset.id = id;
+    }
+    
+    // 存储序列化格式
+    const serialized = componentDef.needsId 
+        ? `${componentDef.prefix}${id}${componentDef.suffix}`
+        : `${componentDef.prefix}${componentDef.suffix}`;
+    span.dataset.serialized = serialized;
+    
+    // 防止编辑器破坏组件
+    span.setAttribute('contenteditable', 'false');
+    
+    return span;
+}
+
+// 新增辅助函数：判断选区是否在编辑器内
+function isSelectionInside(editor) {
+    const selection = window.getSelection();
+    if (selection.rangeCount === 0) return false;
+    
+    const range = selection.getRangeAt(0);
+    return editor.contains(range.commonAncestorContainer);
+}
+
+// 新增辅助函数：移动光标到编辑器末尾
+function moveCursorToEnd(editor) {
+    const range = document.createRange();
+    const sel = window.getSelection();
+    
+    // 处理空编辑器的情况
+    if (editor.childNodes.length === 0) {
+        editor.appendChild(document.createElement('br'));
+    }
+    
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+}
+
+// 修改后的光标位置插入函数
+function insertAtCursor(node) {
+    const editor = document.getElementById('editor');
+    const selection = window.getSelection();
+    
+    // 处理空选区的情况
+    if (selection.rangeCount === 0) {
+        moveCursorToEnd(editor);
+    }
+
+    let range = selection.getRangeAt(0);
+    // 确保选区在编辑器内部
+    if (!editor.contains(range.commonAncestorContainer)) {
+        moveCursorToEnd(editor);
+        range = selection.getRangeAt(0); // 修复：使用 let 而不是 const
+    }
+
+    // 删除可能存在的空文本节点
+    if (range.startContainer.nodeType === Node.TEXT_NODE && 
+        range.startOffset === 0 && 
+        range.endOffset === 0) {
+        range.startContainer.parentNode.removeChild(range.startContainer);
+    }
+
+    // 插入组件
+    range.deleteContents();
+    range.insertNode(node);
+
+    // 添加不间断空格在组件后面
+    const nonBreakingSpace = document.createTextNode('\u00A0');
+    const spaceRange = new Range();
+    spaceRange.setStartAfter(node);
+    spaceRange.collapse(true);
+    spaceRange.insertNode(nonBreakingSpace);
+
+    // 维护编辑器结构：确保组件不在根节点
+    if (node.parentNode === editor) {
+        const wrapper = document.createElement('div');
+        editor.replaceChild(wrapper, node);
+        wrapper.appendChild(node);
+        wrapper.appendChild(nonBreakingSpace);
+    }
+
+    // 移动光标到空格后
+    const newRange = document.createRange();
+    newRange.setStartAfter(nonBreakingSpace);
+    newRange.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(newRange);
+}
+
+// 保存内容函数
+function saveContent() {
+    const editor = document.getElementById('editor');
+    let content = editor.innerHTML;
+    
+    // 可以在这里做一些额外的处理，比如将组件转换为纯文本格式等
+    localStorage.setItem('editorContent', content);
+    
+    // 同时保存序列化版本（纯文本版本）
+    const serialized = getSerializedContent();
+    localStorage.setItem('editorContentSerialized', serialized);
+    
+    alert('内容已保存！');
+}
+
+// 获取序列化内容（将组件转换为纯文本格式）
+function getSerializedContent() {
+    const editor = document.getElementById('editor');
+    const clonedEditor = editor.cloneNode(true);
+    
+    // 找到所有组件并替换为序列化格式
+    const components = clonedEditor.querySelectorAll('.component');
+    components.forEach(component => {
+        if (component.dataset.serialized) {
+            const textNode = document.createTextNode(component.dataset.serialized);
+            component.parentNode.replaceChild(textNode, component);
+        }
+    });
+    
+    return clonedEditor.innerHTML;
+}
+
+// 加载内容函数
+function loadContent() {
+    const savedContent = localStorage.getItem('editorContent');
+    if (!savedContent) {
+        alert('没有找到保存的内容！');
+        return;
+    }
+    
+    const editor = document.getElementById('editor');
+    editor.innerHTML = savedContent;
+    
+    // 确保组件仍然不可编辑
+    const components = editor.querySelectorAll('.component');
+    components.forEach(component => {
+        component.contentEditable = false;
+    });
+    
+    alert('内容已加载！');
+}
+
+// 解析文本内容中的组件标记，将它们转换为组件元素
+function parseContent(text) {
+    let result = text;
+    
+    // 遍历每种组件定义，查找并替换匹配的文本
+    componentDefinitions.forEach(def => {
+        const pattern = new RegExp(
+            escapeRegExp(def.prefix) + 
+            (def.needsId ? '([^' + escapeRegExp(def.suffix) + ']+)' : '') + 
+            escapeRegExp(def.suffix), 
+            'g'
+        );
+        
+        result = result.replace(pattern, (match, id) => {
+            const component = createComponentElement(def, id);
+            return component.outerHTML;
+        });
+    });
+    
+    return result;
+}
+
+// 辅助函数：转义正则表达式特殊字符
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// 加载测试示例
+function loadTestExample() {
+    const editor = document.getElementById('editor');
+    
+    // 清空编辑器
+    editor.innerHTML = '';
+    
+    // 创建示例内容
+    const p1 = document.createElement('p');
+    p1.textContent = '这是一个测试示例，包含多种组件：';
+    editor.appendChild(p1);
+    
+    // 创建段落并添加组件
+    const p2 = document.createElement('p');
+    p2.textContent = '您可以查看这个';
+    
+    // 插入淘礼金组件示例
+    const tlj = createComponentElement(
+        componentDefinitions.find(c => c.type === 'tlj'), 
+        '123456'
+    );
+    p2.appendChild(tlj);
+    p2.appendChild(document.createTextNode('\u00A0并在这里插入'));
+    
+    // 插入昵称组件示例
+    const nickname = createComponentElement(
+        componentDefinitions.find(c => c.type === 'nickname'), 
+        ''
+    );
+    p2.appendChild(nickname);
+    p2.appendChild(document.createTextNode('\u00A0占位符，还可以添加'));
+    
+    // 插入表情组件示例
+    const emoji = createComponentElement(
+        componentDefinitions.find(c => c.type === 'emoji'), 
+        '笑脸'
+    );
+    p2.appendChild(emoji);
+    
+    editor.appendChild(p2);
+    
+    // 添加说明
+    const p3 = document.createElement('p');
+    p3.textContent = '试试在这些组件之间编辑文本，或添加新的组件！';
+    editor.appendChild(p3);
+    
+    // 确保所有组件都不可编辑
+    const components = editor.querySelectorAll('.component');
+    components.forEach(component => {
+        component.contentEditable = false;
+    });
+    
+    alert('测试示例已加载！');
+}
+    </script>
+</body>
+</html>
