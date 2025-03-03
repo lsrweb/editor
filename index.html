@@ -1,193 +1,138 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <title>组件富文本编辑器</title>
-    <style>
-        #editor {
-            border: 1px solid #ccc;
-            min-height: 200px;
-            padding: 10px;
-            margin: 10px 0;
-        }
-
-        .component {
-            background-color: #e0f0ff;
-            border: 1px solid #a0c0ff;
-            padding: 2px 5px;
-            border-radius: 3px;
-            margin: 0 2px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MEditor 示例</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    button {
+      margin: 5px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    .controls {
+      margin-bottom: 15px;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px dashed #ccc;
+      background-color: #f9f9f9;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
 </head>
 <body>
-    <div>
-        <button onclick="insertComponent('tlj')">插入淘礼金</button>
-        <button onclick="insertComponent('jdlj')">插入京东礼金</button>
-        <button onclick="insertComponent('nickname')">插入昵称</button>
-        <button onclick="insertComponent('emoji')">插入表情</button>
-    </div>
-    <div id="editor" contenteditable="true"></div>
-    <button onclick="saveContent()">保存内容</button>
-    <button onclick="loadContent()">回显测试</button>
-
-    <script>
-        const componentDefinitions = [
-            {
-                prefix: '{TLJ-PLLJ-',
-                suffix: '}',
-                type: 'tlj',
-                className: 'component tlj-component',
-                needsId: true,
-                formatTitle: (id) => `淘礼金组件: ${id}`,
-            },
-            {
-                prefix: '{JDLJ-PLLJ-',
-                suffix: '}',
-                type: 'jdlj',
-                className: 'component jdlj-component',
-                needsId: true,
-                formatTitle: (id) => `京东礼金组件: ${id}`,
-            },
-            {
-                prefix: '{@昵称',
-                suffix: '}',
-                type: 'nickname',
-                className: 'component nickname-component',
-                needsId: false,
-                formatTitle: () => '昵称占位符',
-            },
-            {
-                prefix: '[',
-                suffix: ']',
-                type: 'emoji',
-                className: 'component emoji-component',
-                needsId: true,
-                formatTitle: (id) => `表情: ${id}`,
-                noWrap: true
-            }
-        ];
-
-        // 插入组件处理
-        function insertComponent(type) {
-            const componentDef = componentDefinitions.find(c => c.type === type);
-            if (!componentDef) return;
-
-            let id = '';
-            if (componentDef.needsId) {
-                id = prompt(`请输入${componentDef.type}的ID:`);
-                if (id === null) return; // 用户取消
-            }
-
-            const editor = document.getElementById('editor');
-            const component = createComponentElement(componentDef, id);
-            insertAtCursor(component);
-        }
-
-        // 创建组件元素
-        function createComponentElement(componentDef, id) {
-            const span = document.createElement('span');
-            span.contentEditable = 'false';
-            span.className = componentDef.className;
-            span.dataset.type = componentDef.type;
+  <h1>MEditor 可插入组件的编辑器</h1>
+  
+  <div class="controls">
+    <button id="insertTlj">插入淘礼金组件</button>
+    <button id="insertMention">插入@组件</button>
+    <button id="setStyle">设置组件样式</button>
+    <button id="clearContent">清空编辑器</button>
+    <button id="getContent">获取内容</button>
+    <button id="setContent">设置内容回显</button>
+  </div>
+  
+  <m-editor id="myEditor"></m-editor>
+  
+  <div class="result" id="result">
+    <p>内容将显示在这里</p>
+  </div>
+  
+  <script src="MEditor.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 编辑器初始化
+      const editorElement = document.getElementById('myEditor');
+      let editor = null;
+      
+      // 编辑器就绪事件
+      editorElement.addEventListener('editor-ready', function(e) {
+        editor = e.detail;
+        console.log('编辑器已就绪');
+        
+        // 设置默认组件样式
+        editor.setComponentStyle('default', {
+          fontStyle: 'italic',
+          backgroundColor: '',
+          border: 'none',
+          display: 'inline-block'
+        });
+        
+        // 添加观察者，实时更新内容
+        editor.observeContent(function(content) {
+          document.getElementById('result').textContent = content;
+        });
+      });
+      
+      // 插入淘礼金组件
+      document.getElementById('insertTlj').addEventListener('click', function() {
+        
+        if (editor) {
+            console.log(insertComponent('ABCDEFG'));
             
-            if (componentDef.needsId) {
-                span.dataset.componentId = id;
-            }
-            
-            span.textContent = componentDef.formatTitle(id || '');
-            return span;
+          editor.insertComponent('ABCDEFG');
         }
-
-        // 光标位置插入
-        function insertAtCursor(node) {
-            const selection = window.getSelection();
-            if (selection.rangeCount === 0) return;
-
-            const range = selection.getRangeAt(0);
-            range.deleteContents();
-            range.insertNode(node);
-            
-            // 移动光标到组件后
-            const newRange = new Range();
-            newRange.setStartAfter(node);
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
+      });
+      
+      // 插入@组件
+      document.getElementById('insertMention').addEventListener('click', function() {
+        if (editor) {
+          editor.addComponentPrefix('MENTION-');
+          editor.insertComponent('昵称', '@昵称');
         }
-
-        // 保存内容
-        function saveContent() {
-            const content = serializeEditorContent(document.getElementById('editor'));
-            console.log('保存内容:', content);
-            localStorage.setItem('editorContent', content);
+      });
+      
+      // 设置组件样式
+      document.getElementById('setStyle').addEventListener('click', function() {
+        if (editor) {
+          const useColorStyle = confirm('是否使用有底色的样式？');
+          editor.setComponentStyle('default', useColorStyle ? {
+            fontStyle: 'italic',
+            backgroundColor: '#f0f0f0',
+            padding: '0 4px',
+            borderRadius: '2px',
+            display: 'inline-block'
+          } : {
+            fontStyle: 'italic',
+            backgroundColor: '',
+            border: 'none',
+            display: 'inline-block'
+          });
         }
-
-        // 序列化编辑器内容
-        function serializeEditorContent(editorNode) {
-            let content = '';
-            const walker = document.createTreeWalker(editorNode, NodeFilter.SHOW_ALL);
-            
-            while (walker.nextNode()) {
-                const node = walker.currentNode;
-                
-                if (node.nodeType === Node.TEXT_NODE) {
-                    content += node.textContent;
-                } else if (node instanceof HTMLElement) {
-                    const componentDef = componentDefinitions.find(c => 
-                        node.classList.contains(c.className.split(' ')[1])
-                    );
-                    
-                    if (componentDef) {
-                        content += componentDef.prefix;
-                        if (componentDef.needsId) {
-                            content += node.dataset.componentId || '';
-                        }
-                        content += componentDef.suffix;
-                    } else {
-                        content += node.textContent;
-                    }
-                }
-            }
-            return content;
+      });
+      
+      // 清空内容
+      document.getElementById('clearContent').addEventListener('click', function() {
+        if (editor) {
+          editor.clearContent();
         }
-
-        // 加载回显内容
-        function loadContent() {
-            const savedContent = localStorage.getItem('editorContent') || 
-                '{TLJ-PLLJ-1iTgI9} 123{@昵称}[smile]';
-            
-            const editor = document.getElementById('editor');
-            editor.innerHTML = parseContent(savedContent, componentDefinitions);
+      });
+      
+      // 获取内容
+      document.getElementById('getContent').addEventListener('click', function() {
+        if (editor) {
+          const content = editor.getPlainContent();
+          alert('当前内容：' + content);
         }
-
-        // 解析内容为HTML
-        function parseContent(content, definitions) {
-            const sortedDefs = [...definitions].sort((a, b) => 
-                b.prefix.length - a.prefix.length
-            );
-            
-            let parsed = content;
-            sortedDefs.forEach(def => {
-                const pattern = escapeRegExp(def.prefix) + 
-                    (def.needsId ? '([^' + escapeRegExp(def.suffix[0]) + ']*)' : '') + 
-                    escapeRegExp(def.suffix);
-                
-                parsed = parsed.replace(new RegExp(pattern, 'g'), (match, id) => {
-                    return `<span contenteditable="false" 
-                                class="${def.className}" 
-                                data-type="${def.type}" 
-                                data-component-id="${id || ''}">
-                            ${def.formatTitle(id || '')}
-                            </span>`;
-                });
-            });
-            return parsed;
+      });
+      
+      // 设置内容回显
+      document.getElementById('setContent').addEventListener('click', function() {
+        if (editor) {
+          const testContent = '这是一段{TLJ-PLLJ-1iTgI9}测试文本{TLJ-PLLJ-2XXLv0}包含多个{MENTION-昵称}组件';
+          editor.setContentWithComponents(testContent);
         }
-
-        function escapeRegExp(str) {
-            return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        }
-    </script>
+      });
+    });
+  </script>
 </body>
 </html>
