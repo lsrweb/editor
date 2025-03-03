@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>组件富文本编辑器 - Web Component 版本</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        
+        .container {
+            border: 1px solid #eee;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>组件富文本编辑器</h1>
+    
+    <div class="container">
+        <!-- 使用自定义组件 -->
+        <rich-text-editor id="myEditor"></rich-text-editor>
+    </div>
+
+    <script src="rich-text-editor.js"></script>
+    
+    <script>
+        // 等待编辑器组件准备好
+        document.getElementById('myEditor').addEventListener('editor-ready', function() {
+            console.log('编辑器已准备好');
+            
+            // 可以在这里添加其他初始化代码
+        });
+        
+        // 演示如何通过JavaScript API使用编辑器
+        function useEditorAPI() {
+            const editor = document.getElementById('myEditor');
+            
+            // 获取内容
+            const content = editor.getContent();
+            console.log('编辑器内容:', content);
+            
+            // 获取纯文本
+            const plainText = editor.getPlainText();
+            console.log('纯文本内容:', plainText);
+            
+            // 获取组件列表
+            const components = editor.getComponents();
+            console.log('组件列表:', components);
+            
+            // 设置内容
+            // editor.setContent('这是通过API设置的内容，包含一个{TLJ-PLLJ-123456}组件');
+        }
+    </script>
+</body>
+</html>
